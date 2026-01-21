@@ -55,11 +55,9 @@ function App() {
 
                     {/* department */}
                     <Route path="/department/add*" element={<AddDepartment/>} />
-                    {/*<Route path="/department/list*" element={<ListDepartment/>} />*/}
 
                     {/* customer */}
                     <Route path="/customer/add*" element={<AddCustomer/>} />
-                    {/*<Route path="/customer/list*" element={<ListCustomer/>} />*/}
 
                     {/* supplier */}
                     <Route path="/supplier/add*" element={<AddSupplier/>} />
