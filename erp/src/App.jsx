@@ -9,30 +9,33 @@ import AddProduct from "./pages/product/AddProduct"
 import ListProduct from "./pages/product/ListProduct"
 import { Toaster } from "@/components/ui/sonner"
 import Login from "./pages/auth/login"
+import {AuthProvider} from "./Context/AuthContext"
 
 function App() {
-  return (
-    <BrowserRouter>
-     <Toaster />
-      <Routes>
-        
-        <Route path="/" element={<DashboardLayout />}>
-        
-          <Route index element={<HomePage />} />
-          <Route path="inbox" element={<InboxPage />} />
-          <Route path="calendar" element={<CalendarPage />} />
-          <Route path="search" element={<SearchPage />} />
-          <Route path="settings" element={<SettingsPage />} />
-          
-          
-          {/* product */}
-          <Route path="/products/add*" element={<AddProduct/>} />
-          <Route path="/products/list*" element={<ListProduct/>} />
-        </Route>
-        <Route path="/login" element={<Login/>}/>
-      </Routes>
-    </BrowserRouter>
-  )
+    return (
+        <AuthProvider>
+        <BrowserRouter>
+            <Toaster />
+            <Routes>
+
+                <Route path="/" element={<DashboardLayout />}>
+
+                    <Route index element={<HomePage />} />
+                    <Route path="inbox" element={<InboxPage />} />
+                    <Route path="calendar" element={<CalendarPage />} />
+                    <Route path="search" element={<SearchPage />} />
+                    <Route path="settings" element={<SettingsPage />} />
+
+
+                    {/* product */}
+                    <Route path="/products/add*" element={<AddProduct/>} />
+                    <Route path="/products/list*" element={<ListProduct/>} />
+                </Route>
+                <Route path="/login" element={<Login/>}/>
+            </Routes>
+        </BrowserRouter>
+        </AuthProvider>
+    )
 }
 
 export default App
