@@ -10,6 +10,16 @@ import ListProduct from "./pages/product/ListProduct"
 import { Toaster } from "@/components/ui/sonner"
 import Login from "./pages/auth/login"
 import {AuthProvider} from "./Context/AuthContext"
+import AddBrand from "@/pages/brand/AddBrand";
+import ListBrand from "@/pages/brand/ListBrand";
+import AddCategory from "@/pages/category/AddCategory";
+// import ListCategory from "@/pages/category/ListCategory";
+import AddBranch from "@/pages/branch/AddBranch";
+import AddDepartment from "@/pages/department/AddDepartment";
+import AddCustomer from "@/pages/customer/AddCustomer.jsx";
+import AddSupplier from "@/pages/supplier/AddSupplier.jsx";
+// import ListBranch from "@/pages/branch/ListBranch";
+
 
 function App() {
     return (
@@ -30,6 +40,36 @@ function App() {
                     {/* product */}
                     <Route path="/products/add*" element={<AddProduct/>} />
                     <Route path="/products/list*" element={<ListProduct/>} />
+
+                    {/* brand */}
+                    <Route path="/brand/add*" element={<AddBrand/>} />
+                    <Route path="/brand/list*" element={<ListBrand/>} />
+
+                    {/* category */}
+                    <Route path="/category/add*" element={<AddCategory/>} />
+                    {/*<Route path="/category/list*" element={<ListCategory/>} />*/}
+
+                    {/* branch */}
+                    <Route path="/branch/add*" element={<AddBranch/>} />
+                    {/*<Route path="/branch/list*" element={<ListBranch/>} />*/}
+
+                    {/* department */}
+                    <Route path="/department/add*" element={<AddDepartment/>} />
+                    {/*<Route path="/department/list*" element={<ListDepartment/>} />*/}
+
+                    {/* customer */}
+                    <Route path="/customer/add*" element={<AddCustomer/>} />
+                    {/*<Route path="/customer/list*" element={<ListCustomer/>} />*/}
+
+                    {/* supplier */}
+                    <Route path="/supplier/add*" element={<AddSupplier/>} />
+
+
+
+
+
+
+
                 </Route>
                 <Route path="/login" element={<Login/>}/>
             </Routes>
