@@ -47,11 +47,10 @@ function App() {
 
                     {/* category */}
                     <Route path="/category/add*" element={<AddCategory/>} />
-                    {/*<Route path="/category/list*" element={<ListCategory/>} />*/}
 
                     {/* branch */}
                     <Route path="/branch/add*" element={<AddBranch/>} />
-                    {/*<Route path="/branch/list*" element={<ListBranch/>} />*/}
+
 
                     {/* department */}
                     <Route path="/department/add*" element={<AddDepartment/>} />
