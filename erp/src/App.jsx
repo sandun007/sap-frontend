@@ -63,11 +63,6 @@ function App() {
                     <Route path="/supplier/add*" element={<AddSupplier/>} />
 
 
-
-
-
-
-
                 </Route>
                 <Route path="/login" element={<Login/>}/>
             </Routes>
