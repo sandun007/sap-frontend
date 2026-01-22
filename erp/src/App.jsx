@@ -13,7 +13,7 @@ import {AuthProvider} from "./Context/AuthContext"
 import AddBrand from "@/pages/brand/AddBrand";
 import ListBrand from "@/pages/brand/ListBrand";
 import AddCategory from "@/pages/category/AddCategory";
-// import ListCategory from "@/pages/category/ListCategory";
+import ListCategory from "@/pages/category/ListCategory";
 import AddBranch from "@/pages/branch/AddBranch";
 import AddDepartment from "@/pages/department/AddDepartment";
 import AddCustomer from "@/pages/customer/AddCustomer.jsx";
@@ -47,6 +47,7 @@ function App() {
 
                     {/* category */}
                     <Route path="/category/add*" element={<AddCategory/>} />
+                    <Route path="/category/list*" element={<ListCategory/>} />
 
                     {/* branch */}
                     <Route path="/branch/add*" element={<AddBranch/>} />
