@@ -18,7 +18,7 @@ import AddBranch from "@/pages/branch/AddBranch";
 import AddDepartment from "@/pages/department/AddDepartment";
 import AddCustomer from "@/pages/customer/AddCustomer.jsx";
 import AddSupplier from "@/pages/supplier/AddSupplier.jsx";
-// import ListBranch from "@/pages/branch/ListBranch";
+import ListBranch from "@/pages/branch/ListBranch";
 
 
 function App() {
@@ -51,7 +51,7 @@ function App() {
 
                     {/* branch */}
                     <Route path="/branch/add*" element={<AddBranch/>} />
-
+                    <Route path="/branch/list*" element={<ListBranch/>} />
 
                     {/* department */}
                     <Route path="/department/add*" element={<AddDepartment/>} />
