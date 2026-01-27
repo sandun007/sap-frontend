@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import * as XLSX from 'xlsx'
+import jsPDF from 'jspdf'
 
 import {
     DropdownMenu,
@@ -38,13 +40,16 @@ import {
     MoreVertical,
     Edit,
     Trash2,
-    Building2
+    Building2,
+    Download,
+    FileText,
+    Upload
 } from 'lucide-react'
 
 // Temporary data
 const initialSuppliers = [
     {
-        supplier_id: 1,
+        supplier_id: "SUP-000001-ABCD",
         supplier_name: "Tech Solutions Inc",
         contact_person: "John Doe",
         phone: "+94771234567",
@@ -55,7 +60,7 @@ const initialSuppliers = [
         created_date: "2024-01-05"
     },
     {
-        supplier_id: 2,
+        supplier_id: "SUP-000002-EFGH",
         supplier_name: "Global Traders Ltd",
         contact_person: "Jane Smith",
         phone: "+94772345678",
@@ -73,12 +78,132 @@ export default function ListSupplier() {
     const [deleteDialog, setDeleteDialog] = useState({ open: false, supplier: null })
     const [editDialog, setEditDialog] = useState({ open: false, supplier: null })
     const [editForm, setEditForm] = useState({})
-    useRef(null);
+    const [importDialog, setImportDialog] = useState(false)
+    const fileInputRef = useRef(null)
     const filteredSuppliers = suppliers.filter(sup =>
         sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        sup.supplier_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (sup.contact_person && sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase())) ||
         (sup.email && sup.email.toLowerCase().includes(searchTerm.toLowerCase()))
     )
+
+    // Generate unique supplier ID
+    const generateSupplierId = () => {
+        const timestamp = Date.now().toString().slice(-6)
+        const random = Math.random().toString(36).substr(2, 4).toUpperCase()
+        return `SUP-${timestamp}-${random}`
+    }
+
+    // Export to Excel
+    const exportToExcel = () => {
+        try {
+            const worksheet = XLSX.utils.json_to_sheet(filteredSuppliers.map(sup => ({
+                'Supplier Name': sup.supplier_name,
+                'Contact Person': sup.contact_person || '',
+                'Phone': sup.phone || '',
+                'Email': sup.email || '',
+                'Address': sup.address || '',
+                'Tax ID': sup.tax_id || '',
+                'Payment Terms': sup.payment_terms || '',
+                'Created Date': sup.created_date
+            })))
+            const workbook = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'Suppliers')
+            XLSX.writeFile(workbook, `suppliers_export_${new Date().toISOString().split('T')[0]}.xlsx`)
+            toast.success(`Exported ${filteredSuppliers.length} suppliers to Excel.`)
+        } catch (error) {
+            toast.error("Failed to export suppliers to Excel.")
+        }
+    }
+
+    // Export to PDF
+    const exportToPDF = () => {
+        try {
+            const doc = new jsPDF()
+            doc.setFontSize(20)
+            doc.text('Supplier List', 14, 22)
+            doc.setFontSize(10)
+            doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
+            doc.text(`Total Suppliers: ${filteredSuppliers.length}`, 14, 37)
+
+            const tableColumn = ['Name', 'Contact', 'Phone', 'Email', 'Terms']
+            const tableRows = filteredSuppliers.map(sup => [
+                sup.supplier_name,
+                sup.contact_person || '-',
+                sup.phone || '-',
+                sup.email || '-',
+                sup.payment_terms || '-'
+            ])
+
+            doc.autoTable({
+                head: [tableColumn],
+                body: tableRows,
+                startY: 45,
+                styles: { fontSize: 9 },
+                headStyles: { fillColor: [59, 130, 246] }
+            })
+
+            doc.save(`suppliers_report_${new Date().toISOString().split('T')[0]}.pdf`)
+            toast.success(`Generated PDF report with ${filteredSuppliers.length} suppliers.`)
+        } catch (error) {
+            toast.error("Failed to generate PDF report.")
+        }
+    }
+
+    // Handle Excel file import
+    const handleFileUpload = (event) => {
+        const file = event.target.files[0]
+        if (!file) return
+
+        const reader = new FileReader()
+        reader.onload = (e) => {
+            try {
+                const data = new Uint8Array(e.target.result)
+                const workbook = XLSX.read(data, { type: 'array' })
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+                const jsonData = XLSX.utils.sheet_to_json(worksheet)
+
+                const newSuppliers = jsonData.map((item, index) => ({
+                    supplier_id: generateSupplierId(),
+                    supplier_name: item['Supplier Name'] || `Imported Supplier ${index + 1}`,
+                    contact_person: item['Contact Person'] || '',
+                    phone: item['Phone'] || '',
+                    email: item['Email'] || '',
+                    address: item['Address'] || '',
+                    tax_id: item['Tax ID'] || '',
+                    payment_terms: item['Payment Terms'] || '',
+                    created_date: new Date().toISOString().split('T')[0]
+                }))
+
+                setSuppliers(prev => [...prev, ...newSuppliers])
+                setImportDialog(false)
+                toast.success(`Successfully imported ${newSuppliers.length} suppliers.`)
+            } catch (error) {
+                toast.error("Failed to process the Excel file. Please check the format.")
+            }
+        }
+        reader.readAsArrayBuffer(file)
+    }
+
+    // Download import template
+    const downloadTemplate = () => {
+        const templateData = [{
+            'Supplier Name': 'Sample Supplier',
+            'Contact Person': 'Sample Contact',
+            'Phone': '+94xxxxxxxxx',
+            'Email': 'sample@email.com',
+            'Address': 'Sample Address',
+            'Tax ID': 'TAXxxxxxx',
+            'Payment Terms': 'Net 30'
+        }]
+
+        const worksheet = XLSX.utils.json_to_sheet(templateData)
+        const workbook = XLSX.utils.book_new()
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Template')
+        XLSX.writeFile(workbook, 'supplier_import_template.xlsx')
+
+        toast.success("Supplier import template downloaded successfully.")
+    }
 
     const handleDelete = (supplierId) => {
         setSuppliers(suppliers.filter(sup => sup.supplier_id !== supplierId))
@@ -128,15 +253,31 @@ export default function ListSupplier() {
 
             {/* Search */}
             <Card>
-                <CardContent className="pt-6">
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
-                        <Input
-                            placeholder="Search suppliers..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="pl-10"
-                        />
+                <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row gap-4">
+                        <div className="flex-1 relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
+                            <Input
+                                placeholder="Search suppliers..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="pl-10"
+                            />
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="outline" onClick={exportToExcel} className="gap-2">
+                                <Download className="h-4 w-4" />
+                                Excel
+                            </Button>
+                            <Button variant="outline" onClick={exportToPDF} className="gap-2">
+                                <FileText className="h-4 w-4" />
+                                PDF
+                            </Button>
+                            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2">
+                                <Upload className="h-4 w-4" />
+                                Import
+                            </Button>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
@@ -153,6 +294,7 @@ export default function ListSupplier() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Supplier Name</TableHead>
+                                <TableHead>Supplier ID</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Email</TableHead>
@@ -166,7 +308,13 @@ export default function ListSupplier() {
                             {filteredSuppliers.map((supplier) => (
                                 <TableRow key={supplier.supplier_id}>
                                     <TableCell className="font-medium">
-                                        {supplier.supplier_name}
+                                        <div className="flex items-center gap-3">
+                                            <Building2 className="h-5 w-5 text-muted-foreground" />
+                                            <span>{supplier.supplier_name}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell className="font-mono text-sm">
+                                        {supplier.supplier_id}
                                     </TableCell>
                                     <TableCell>{supplier.contact_person || '-'}</TableCell>
                                     <TableCell>{supplier.phone || '-'}</TableCell>
@@ -246,6 +394,11 @@ export default function ListSupplier() {
                             onChange={(e) => setEditForm({ ...editForm, supplier_name: e.target.value })}
                         />
                         <Input
+                            value={editForm.supplier_id || ''}
+                            readOnly
+                            className="bg-muted cursor-not-allowed"
+                        />
+                        <Input
                             placeholder="Contact Person"
                             value={editForm.contact_person || ''}
                             onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
@@ -273,6 +426,43 @@ export default function ListSupplier() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={importDialog} onOpenChange={setImportDialog}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Import Suppliers</DialogTitle>
+                        <DialogDescription>
+                            Upload an Excel file to import suppliers. Download the template first to ensure proper formatting.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div
+                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                            <p className="text-sm text-gray-600">Click to upload Excel file</p>
+                            <p className="text-xs text-gray-500 mt-1">.xlsx, .xls files supported</p>
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept=".xlsx,.xls"
+                                onChange={handleFileUpload}
+                                className="hidden"
+                            />
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                            <Button variant="link" onClick={downloadTemplate} className="p-0 h-auto">
+                                Download template file
+                            </Button>
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setImportDialog(false)}>
+                            Cancel
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

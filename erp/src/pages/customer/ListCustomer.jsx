@@ -17,7 +17,7 @@ import { Plus, Search, MoreVertical, Edit, Trash2, Download, Upload, FileText, U
 // Temporary data
 const initialCustomers = [
   {
-    id: 1,
+    customer_id: "CUST-000001-ABCD",
     first_name: 'kavindu',
     last_name: 'Jayanath',
     company_name: 'Tech Solutions',
@@ -30,7 +30,7 @@ const initialCustomers = [
     is_active: true,
   },
   {
-    id: 2,
+    customer_id: "CUST-000002-EFGH",
     first_name: 'Tharindu',
     last_name: 'Fernando',
     company_name: 'ABC Corp',
@@ -56,6 +56,7 @@ export default function ListCustomer() {
   // Filter customers
   const filteredCustomers = customers.filter(c =>
     `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      c.customer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.customer_type?.toLowerCase().includes(searchTerm.toLowerCase())
   )
@@ -65,7 +66,7 @@ export default function ListCustomer() {
 
   // Delete customer
   const handleDelete = (customerId) => {
-    setCustomers(customers.filter(c => c.id !== customerId))
+    setCustomers(customers.filter(c => c.customer_id !== customerId))
     setDeleteDialog({ open: false, customer: null })
     toast.success('Customer deleted successfully.')
   }
@@ -73,7 +74,7 @@ export default function ListCustomer() {
   // Update customer
   const handleUpdate = () => {
     setCustomers(customers.map(c =>
-      c.id === editForm.id ? { ...c, ...editForm } : c
+      c.customer_id === editForm.id ? { ...c, ...editForm } : c
     ))
     setEditDialog({ open: false, customer: null })
     setEditForm({})
@@ -103,8 +104,9 @@ export default function ListCustomer() {
     doc.setFontSize(10)
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
 
-    const tableColumn = ['Name', 'Email', 'Phone', 'Customer Type', 'Status']
+    const tableColumn = ['ID', 'Name', 'Email', 'Phone', 'Customer Type', 'Status']
     const tableRows = filteredCustomers.map(c => [
+        c.customer_id,
       `${c.first_name} ${c.last_name}`,
       c.email,
       c.phone || '-',
@@ -138,7 +140,7 @@ export default function ListCustomer() {
         const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
         const newCustomers = jsonData.map((item, index) => ({
-          id: Math.max(...customers.map(c => c.id), 0) + index + 1,
+          customer_id: generateCustomerId(),
           first_name: item['First Name'] || `First${index+1}`,
           last_name: item['Last Name'] || `Last${index+1}`,
           company_name: item['Company Name'] || '',
@@ -239,6 +241,7 @@ export default function ListCustomer() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                  <TableHead>Customer ID</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
                 <TableHead>Customer Type</TableHead>
@@ -248,13 +251,16 @@ export default function ListCustomer() {
             </TableHeader>
             <TableBody>
               {filteredCustomers.map((c) => (
-                <TableRow key={c.id}>
+                <TableRow key={c.customer_id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <User className="h-5 w-5 text-gray-400" />
                       {c.first_name} {c.last_name}
                     </div>
                   </TableCell>
+                    <TableCell className="font-mono text-sm">
+                        {c.customer_id}
+                    </TableCell>
                   <TableCell>{c.email}</TableCell>
                   <TableCell>{c.phone || '-'}</TableCell>
                   <TableCell>{c.customer_type || '-'}</TableCell>
@@ -334,6 +340,14 @@ export default function ListCustomer() {
                 <Input value={editForm.last_name || ''} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} />
               </div>
             </div>
+              <div className="space-y-2">
+                  <Label>Customer ID</Label>
+                  <Input
+                      value={editForm.customer_id || ''}
+                      readOnly
+                      className="bg-muted cursor-not-allowed"
+                  />
+              </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Email</Label>

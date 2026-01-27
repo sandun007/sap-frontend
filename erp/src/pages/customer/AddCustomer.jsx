@@ -13,7 +13,6 @@ export default function AddCustomer() {
         last_name: '',
         company_name: '',
         email: '',
-        password: '',
         phone: '',
         address: '',
         customer_type: '',
@@ -52,7 +51,6 @@ export default function AddCustomer() {
                     last_name: '',
                     company_name: '',
                     email: '',
-                    password: '',
                     phone: '',
                     address: '',
                     customer_type: '',
@@ -97,10 +95,6 @@ export default function AddCustomer() {
                             <InputField label="Email *" icon={Mail}
                                         value={formData.email}
                                         onChange={v => handleChange('email', v)}
-                            />
-                            <InputField label="Password *" icon={Lock} type="password"
-                                        value={formData.password}
-                                        onChange={v => handleChange('password', v)}
                             />
                         </CardContent>
                     </Card>

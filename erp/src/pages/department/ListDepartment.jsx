@@ -45,7 +45,6 @@ import {
   Edit,
   Trash2,
   Download,
-  Upload,
   FileText,
   Building,
   GitBranch,
@@ -206,6 +205,7 @@ export default function ListDepartment() {
             <TableHeader>
               <TableRow>
                 <TableHead>Department</TableHead>
+                  <TableHead>Department ID</TableHead>
                 <TableHead>Branch</TableHead>
                 <TableHead>Manager</TableHead>
                 <TableHead>Status</TableHead>
@@ -220,12 +220,12 @@ export default function ListDepartment() {
                       <Building className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <div className="font-medium">{dept.department_name}</div>
-                        <div className="text-xs text-muted-foreground font-mono">
-                          {dept.department_id}
-                        </div>
                       </div>
                     </div>
                   </TableCell>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                        {dept.department_id}
+                    </TableCell>
                   <TableCell>
                     <GitBranch className="inline h-4 w-4 mr-1" />
                     {dept.branch_id}
@@ -300,89 +300,96 @@ export default function ListDepartment() {
 
       {/* Edit Dialog */}
       {/* Edit Dialog */}
-<Dialog
-  open={editDialog.open}
-  onOpenChange={() => setEditDialog({ open: false, dept: null })}
->
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Edit Department</DialogTitle>
-      <DialogDescription>
-        Update department details
-      </DialogDescription>
-    </DialogHeader>
+        <Dialog
+          open={editDialog.open}
+          onOpenChange={() => setEditDialog({ open: false, dept: null })}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Department</DialogTitle>
+              <DialogDescription>
+                Update department details
+              </DialogDescription>
+            </DialogHeader>
 
-    <div className="space-y-4">
-      {/* Department ID */}
-      
+            <div className="space-y-4">
+              {/* Department ID */}
 
-      {/* Name */}
-      <div>
-        <Label>Department Name</Label>
-        <Input
-          value={editForm.department_name || ""}
-          onChange={(e) =>
-            setEditForm({ ...editForm, department_name: e.target.value })
-          }
-        />
-      </div>
+                <div className="space-y-2">
+                    <Label>Department ID</Label>
+                    <Input
+                        value={editForm.department_id || ""}
+                        readOnly
+                        className="bg-muted cursor-not-allowed font-mono"
+                    />
+                </div>
 
-      {/* Description */}
-      
+              {/* Name */}
+              <div>
+                <Label>Department Name</Label>
+                <Input
+                  value={editForm.department_name || ""}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, department_name: e.target.value })
+                  }
+                />
+              </div>
 
-      {/* Branch */}
-      <div>
-        <Label>Branch</Label>
-        <Input
-          value={editForm.branch_id || ""}
-          onChange={(e) =>
-            setEditForm({ ...editForm, branch_id: e.target.value })
-          }
-        />
-      </div>
+              {/* Description */}
 
-      {/* Manager */}
-      <div>
-        <Label>Manager</Label>
-        <Input
-          value={editForm.manager_id || ""}
-          onChange={(e) =>
-            setEditForm({ ...editForm, manager_id: e.target.value })
-          }
-        />
-      </div>
 
-      {/* Status */}
-      <div className="flex items-center justify-between">
-        <Label>Status</Label>
-        <div className="flex items-center gap-3">
-          <span className="text-sm">
-            {editForm.is_active ? "Active" : "Inactive"}
-          </span>
-          <Switch
-            checked={!!editForm.is_active}
-            onCheckedChange={(value) =>
-              setEditForm({ ...editForm, is_active: value })
-            }
-          />
-        </div>
-      </div>
-    </div>
+              {/* Branch */}
+              <div>
+                <Label>Branch</Label>
+                <Input
+                  value={editForm.branch_id || ""}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, branch_id: e.target.value })
+                  }
+                />
+              </div>
 
-    <DialogFooter>
-      <Button
-        variant="outline"
-        onClick={() => setEditDialog({ open: false, dept: null })}
-      >
-        Cancel
-      </Button>
-      <Button onClick={handleUpdate}>
-        Update Department
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
+              {/* Manager */}
+              <div>
+                <Label>Manager</Label>
+                <Input
+                  value={editForm.manager_id || ""}
+                  onChange={(e) =>
+                    setEditForm({ ...editForm, manager_id: e.target.value })
+                  }
+                />
+              </div>
 
+              {/* Status */}
+              <div className="flex items-center justify-between">
+                <Label>Status</Label>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm">
+                    {editForm.is_active ? "Active" : "Inactive"}
+                  </span>
+                  <Switch
+                    checked={!!editForm.is_active}
+                    onCheckedChange={(value) =>
+                      setEditForm({ ...editForm, is_active: value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setEditDialog({ open: false, dept: null })}
+              >
+                Cancel
+              </Button>
+              <Button onClick={handleUpdate}>
+                Update Department
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
     </div>
   )
 }
