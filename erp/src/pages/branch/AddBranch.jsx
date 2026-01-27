@@ -78,12 +78,12 @@ export default function AddBranch() {
     }
 
     return (
-        <div className="container mx-auto p-6">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Add New Branch</h1>
-                    <p className="text-muted-foreground">Create a new branch</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Add New Branch</h1>
+                    <p className="text-muted-foreground text-sm sm:text-base">Create a new branch</p>
                 </div>
                 <Badge variant="secondary">Branch</Badge>
             </div>
@@ -192,11 +192,11 @@ export default function AddBranch() {
             </div>
 
             {/* Actions */}
-            <div className="flex justify-end gap-4 mt-6">
-                <Button variant="outline" onClick={handleClear}>
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6 pt-6 border-t">
+                <Button variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
                     <X className="h-4 w-4 mr-2" /> Clear
                 </Button>
-                <Button onClick={handleSubmit}>
+                <Button className="w-full sm:w-auto gap-2" onClick={handleSubmit}>
                     <Save className="h-4 w-4 mr-2" /> Save Branch
                 </Button>
             </div>

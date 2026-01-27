@@ -51,11 +51,11 @@ export default function AddSupplier() {
     }
 
     return (
-        <div className="container mx-auto p-6">
-            <div className="flex items-center justify-between mb-6">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Add New Supplier</h1>
-                    <p className="text-muted-foreground">Enter supplier details</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Add New Supplier</h1>
+                    <p className="text-muted-foreground text-sm sm:text-base">Enter supplier details</p>
                 </div>
             </div>
 
@@ -151,7 +151,7 @@ export default function AddSupplier() {
                     </CardContent>
                 </Card>
 
-                <div className="flex justify-end gap-4 mt-6 pt-6 border-t">
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6 pt-6 border-t">
                     <Button type="button" variant="outline" onClick={() => {
                         setFormData({
                             supplier_name: '',

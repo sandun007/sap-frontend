@@ -191,11 +191,11 @@ export default function ListCustomer() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Customer List</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Customer List</h1>
           <p className="text-muted-foreground">Manage your customers</p>
         </div>
         <Button onClick={handleAddCustomer} className="gap-2">
@@ -217,13 +217,13 @@ export default function ListCustomer() {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToExcel} className="gap-2">
+            <Button variant="outline" onClick={exportToExcel} className="gap-2 flex-1 sm:flex-none">
               <Download className="h-4 w-4" /> Excel
             </Button>
-            <Button variant="outline" onClick={exportToPDF} className="gap-2">
+            <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
               <FileText className="h-4 w-4" /> PDF
             </Button>
-            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2">
+            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2 flex-1 sm:flex-none">
               <Upload className="h-4 w-4" /> Import
             </Button>
           </div>
@@ -322,7 +322,7 @@ export default function ListCustomer() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, customer: null })}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
@@ -330,7 +330,6 @@ export default function ListCustomer() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>First Name</Label>
                 <Input value={editForm.first_name || ''} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} />
@@ -339,7 +338,6 @@ export default function ListCustomer() {
                 <Label>Last Name</Label>
                 <Input value={editForm.last_name || ''} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} />
               </div>
-            </div>
               <div className="space-y-2">
                   <Label>Customer ID</Label>
                   <Input
@@ -348,7 +346,6 @@ export default function ListCustomer() {
                       className="bg-muted cursor-not-allowed"
                   />
               </div>
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Email</Label>
                 <Input value={editForm.email || ''} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
@@ -357,8 +354,6 @@ export default function ListCustomer() {
                 <Label>Phone</Label>
                 <Input value={editForm.phone || ''} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Customer Type</Label>
                 <Input value={editForm.customer_type || ''} onChange={(e) => setEditForm({ ...editForm, customer_type: e.target.value })} />
@@ -367,7 +362,6 @@ export default function ListCustomer() {
                 <Label>Active Status</Label>
                 <Switch checked={editForm.is_active ?? true} onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })} />
               </div>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, customer: null })}>Cancel</Button>

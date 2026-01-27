@@ -275,14 +275,14 @@ export default function ListProduct() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Product List</h1>
-          <p className="text-muted-foreground">Manage your product inventory</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Product List</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Manage your product inventory</p>
         </div>
-        <Button onClick={handleAddProduct} className="gap-2">
+        <Button onClick={handleAddProduct} className="gap-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Add Product
         </Button>
@@ -314,15 +314,15 @@ export default function ListProduct() {
               </SelectContent>
             </Select>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={exportToExcel} className="gap-2">
+              <Button variant="outline" onClick={exportToExcel} className="gap-2 flex-1 sm:flex-none">
                 <Download className="h-4 w-4" />
                 Excel
               </Button>
-              <Button variant="outline" onClick={exportToPDF} className="gap-2">
+              <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
                 <FileText className="h-4 w-4" />
                 PDF
               </Button>
-              <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2">
+              <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2 flex-1 sm:flex-none">
                 <Upload className="h-4 w-4" />
                 Import
               </Button>
@@ -447,7 +447,7 @@ export default function ListProduct() {
 
       {/* Edit Product Dialog */}
       <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, product: null })}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>
@@ -455,7 +455,7 @@ export default function ListProduct() {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+
               <div className="space-y-2">
                 <Label htmlFor="edit-name">Product Name</Label>
                 <Input
@@ -472,8 +472,8 @@ export default function ListProduct() {
                   onChange={(e) => setEditForm({...editForm, product_id: e.target.value})}
                 />
               </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
+
+
               <div className="space-y-2">
                 <Label htmlFor="edit-price">Unit Price</Label>
                 <Input
@@ -492,7 +492,7 @@ export default function ListProduct() {
                   onChange={(e) => setEditForm({...editForm, cost_price: parseFloat(e.target.value)})}
                 />
               </div>
-            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-stock">Stock Quantity</Label>

@@ -154,11 +154,11 @@ export default function ListDepartment() {
   }
 
   return (
-    <div className="container mx-auto p-6">
+    <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Department List</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold">Department List</h1>
           <p className="text-muted-foreground">
             Manage organization departments
           </p>
@@ -182,10 +182,10 @@ export default function ListDepartment() {
             />
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={exportToExcel}>
+            <Button variant="outline" onClick={exportToExcel} className="gap-2 flex-1 sm:flex-none">
               <Download className="h-4 w-4 mr-2" /> Excel
             </Button>
-            <Button variant="outline" onClick={exportToPDF}>
+            <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
               <FileText className="h-4 w-4 mr-2" /> PDF
             </Button>
           </div>

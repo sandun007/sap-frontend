@@ -230,15 +230,14 @@ export default function ListSupplier() {
     }
 
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-4">
 
             {/* Header */}
             <Card>
                 <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                         <div>
-                            <CardTitle className="text-3xl font-bold flex items-center gap-2">
-                                <Building2 className="h-8 w-8" />
+                            <CardTitle className="text-2xl sm:text-3xl font-bold">
                                 Supplier List
                             </CardTitle>
                             <CardDescription>Manage your supplier inventory</CardDescription>
@@ -265,15 +264,15 @@ export default function ListSupplier() {
                             />
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="outline" onClick={exportToExcel} className="gap-2">
+                            <Button variant="outline" onClick={exportToExcel} className="gap-2 flex-1 sm:flex-none">
                                 <Download className="h-4 w-4" />
                                 Excel
                             </Button>
-                            <Button variant="outline" onClick={exportToPDF} className="gap-2">
+                            <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
                                 <FileText className="h-4 w-4" />
                                 PDF
                             </Button>
-                            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2">
+                            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2 flex-1 sm:flex-none">
                                 <Upload className="h-4 w-4" />
                                 Import
                             </Button>
@@ -379,42 +378,55 @@ export default function ListSupplier() {
 
             {/* Edit Dialog */}
             <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, supplier: null })}>
-                <DialogContent className="max-w-2xl">
+                <DialogContent>
                     <DialogHeader>
                         <DialogTitle>Edit Supplier</DialogTitle>
                         <DialogDescription>
                             Update {editDialog.supplier?.supplier_name}
                         </DialogDescription>
                     </DialogHeader>
-
-                    <div className="grid grid-cols-2 gap-4 py-4">
-                        <Input
-                            placeholder="Supplier Name"
-                            value={editForm.supplier_name || ''}
-                            onChange={(e) => setEditForm({ ...editForm, supplier_name: e.target.value })}
-                        />
-                        <Input
-                            value={editForm.supplier_id || ''}
-                            readOnly
-                            className="bg-muted cursor-not-allowed"
-                        />
-                        <Input
-                            placeholder="Contact Person"
-                            value={editForm.contact_person || ''}
-                            onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
-                        />
-                        <Input
-                            placeholder="Phone"
-                            value={editForm.phone || ''}
-                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                        />
-                        <Input
-                            placeholder="Email"
-                            value={editForm.email || ''}
-                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                        />
+                    <div className="grid gap-4 py-4">
+                        <div className="space-y-2">
+                            <label htmlFor="">Supplier Name</label>
+                            <Input
+                                placeholder="Supplier Name"
+                                value={editForm.supplier_name || ''}
+                                onChange={(e) => setEditForm({ ...editForm, supplier_name: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="">Supplier ID</label>
+                            <Input
+                                value={editForm.supplier_id || ''}
+                                readOnly
+                                className="bg-muted cursor-not-allowed"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="">Contact Person</label>
+                            <Input
+                                placeholder="Contact Person"
+                                value={editForm.contact_person || ''}
+                                onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="">Phone Number</label>
+                            <Input
+                                placeholder="Phone"
+                                value={editForm.phone || ''}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <label htmlFor="">Email</label>
+                            <Input
+                                placeholder="Email"
+                                value={editForm.email || ''}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            />
+                        </div>
                     </div>
-
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setEditDialog({ open: false, supplier: null })}>
                             Cancel
