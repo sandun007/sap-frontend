@@ -383,7 +383,7 @@ export default function ListBrand() {
 
       {/* Edit brand Dialog */}
         <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, brand: null })}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                     <DialogTitle>Edit Brand</DialogTitle>
                     <DialogDescription>
@@ -391,12 +391,14 @@ export default function ListBrand() {
                     </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
+                    {/* Brand ID + Brand Name – side by side on md+ */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="edit-brand-id">Brand ID</Label>
                             <Input
                                 id="edit-brand-id"
                                 value={editForm.brand_id || ''}
-                                onChange={(e) => setEditForm({...editForm, brand_id: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, brand_id: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
@@ -404,23 +406,39 @@ export default function ListBrand() {
                             <Input
                                 id="edit-brand-name"
                                 value={editForm.brand_name || ''}
-                                onChange={(e) => setEditForm({...editForm, brand_name: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, brand_name: e.target.value })}
                             />
                         </div>
+                    </div>
+
+                    {/* Contact Person + Website – side by side on md+ */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="edit-contact">Contact Person</Label>
                             <Input
                                 id="edit-contact"
                                 value={editForm.contact_person || ''}
-                                onChange={(e) => setEditForm({...editForm, contact_person: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
                             />
                         </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-website">Website</Label>
+                            <Input
+                                id="edit-website"
+                                value={editForm.website || ''}
+                                onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Phone + Email – side by side on md+ */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="edit-phone">Phone</Label>
                             <Input
                                 id="edit-phone"
                                 value={editForm.phone || ''}
-                                onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
@@ -429,23 +447,18 @@ export default function ListBrand() {
                                 id="edit-email"
                                 type="email"
                                 value={editForm.email || ''}
-                                onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="edit-website">Website</Label>
-                            <Input
-                                id="edit-website"
-                                value={editForm.website || ''}
-                                onChange={(e) => setEditForm({...editForm, website: e.target.value})}
-                            />
-                        </div>
+                    </div>
+
+                    {/* Active Status – full width */}
                     <div className="flex items-center justify-between pt-4">
                         <Label htmlFor="edit-status">Active Status</Label>
                         <Switch
                             id="edit-status"
                             checked={editForm.is_active ?? true}
-                            onCheckedChange={(checked) => setEditForm({...editForm, is_active: checked})}
+                            onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
                         />
                     </div>
                 </div>

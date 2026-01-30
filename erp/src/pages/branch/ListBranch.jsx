@@ -391,12 +391,13 @@ export default function ListBranch() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-branch-id">Branch ID</Label>
                                 <Input
                                     id="edit-branch-id"
                                     value={editForm.branch_id || ''}
-                                    onChange={(e) => setEditForm({...editForm, branch_id: e.target.value})}
+                                    onChange={(e) => setEditForm({ ...editForm, branch_id: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -404,23 +405,25 @@ export default function ListBranch() {
                                 <Input
                                     id="edit-branch-name"
                                     value={editForm.branch_name || ''}
-                                    onChange={(e) => setEditForm({...editForm, branch_name: e.target.value})}
+                                    onChange={(e) => setEditForm({ ...editForm, branch_name: e.target.value })}
                                 />
                             </div>
+                        </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-address">Address</Label>
                             <Input
                                 id="edit-address"
                                 value={editForm.address || ''}
-                                onChange={(e) => setEditForm({...editForm, address: e.target.value})}
+                                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                             />
                         </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-phone">Phone</Label>
                                 <Input
                                     id="edit-phone"
                                     value={editForm.phone || ''}
-                                    onChange={(e) => setEditForm({...editForm, phone: e.target.value})}
+                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -429,32 +432,33 @@ export default function ListBranch() {
                                     id="edit-email"
                                     type="email"
                                     value={editForm.email || ''}
-                                    onChange={(e) => setEditForm({...editForm, email: e.target.value})}
+                                    onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-manager-id">Manager ID</Label>
-                                <Input
-                                    id="edit-manager-id"
-                                    value={editForm.manager_id || ''}
-                                    onChange={(e) => setEditForm({...editForm, manager_id: e.target.value})}
-                                />
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-opening-date">Opening Date</Label>
-                                <Input
-                                    id="edit-opening-date"
-                                    type="date"
-                                    value={editForm.opening_date || ''}
-                                    onChange={(e) => setEditForm({...editForm, opening_date: e.target.value})}
-                                />
-                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-manager-id">Manager ID</Label>
+                            <Input
+                                id="edit-manager-id"
+                                value={editForm.manager_id || ''}
+                                onChange={(e) => setEditForm({ ...editForm, manager_id: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-opening-date">Opening Date</Label>
+                            <Input
+                                id="edit-opening-date"
+                                type="date"
+                                value={editForm.opening_date || ''}
+                                onChange={(e) => setEditForm({ ...editForm, opening_date: e.target.value })}
+                            />
+                        </div>
                         <div className="flex items-center justify-between pt-4">
                             <Label htmlFor="edit-status">Active Branch</Label>
                             <Switch
                                 id="edit-status"
                                 checked={editForm.is_active ?? true}
-                                onCheckedChange={(checked) => setEditForm({...editForm, is_active: checked})}
+                                onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
                             />
                         </div>
                     </div>

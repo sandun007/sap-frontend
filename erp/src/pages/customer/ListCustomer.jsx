@@ -329,40 +329,69 @@ export default function ListCustomer() {
               Update information for {editDialog.customer?.first_name} {editDialog.customer?.last_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-              <div className="space-y-2">
-                <Label>First Name</Label>
-                <Input value={editForm.first_name || ''} onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Last Name</Label>
-                <Input value={editForm.last_name || ''} onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                  <Label>Customer ID</Label>
-                  <Input
-                      value={editForm.customer_id || ''}
-                      readOnly
-                      className="bg-muted cursor-not-allowed"
-                  />
-              </div>
-              <div className="space-y-2">
-                <Label>Email</Label>
-                <Input value={editForm.email || ''} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Phone</Label>
-                <Input value={editForm.phone || ''} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Customer Type</Label>
-                <Input value={editForm.customer_type || ''} onChange={(e) => setEditForm({ ...editForm, customer_type: e.target.value })} />
-              </div>
-              <div className="flex items-center justify-between pt-4">
-                <Label>Active Status</Label>
-                <Switch checked={editForm.is_active ?? true} onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })} />
-              </div>
-          </div>
+            <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-first-name">First Name</Label>
+                        <Input
+                            id="edit-first-name"
+                            value={editForm.first_name || ''}
+                            onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-last-name">Last Name</Label>
+                        <Input
+                            id="edit-last-name"
+                            value={editForm.last_name || ''}
+                            onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="edit-customer-id">Customer ID</Label>
+                    <Input
+                        id="edit-customer-id"
+                        value={editForm.customer_id || ''}
+                        readOnly
+                        className="bg-muted cursor-not-allowed"
+                    />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-email">Email</Label>
+                        <Input
+                            id="edit-email"
+                            value={editForm.email || ''}
+                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                        />
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="edit-phone">Phone</Label>
+                        <Input
+                            id="edit-phone"
+                            value={editForm.phone || ''}
+                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    <Label htmlFor="edit-customer-type">Customer Type</Label>
+                    <Input
+                        id="edit-customer-type"
+                        value={editForm.customer_type || ''}
+                        onChange={(e) => setEditForm({ ...editForm, customer_type: e.target.value })}
+                    />
+                </div>
+                <div className="flex items-center justify-between pt-4">
+                    <Label htmlFor="edit-active">Active Status</Label>
+                    <Switch
+                        id="edit-active"
+                        checked={editForm.is_active ?? true}
+                        onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
+                    />
+                </div>
+            </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, customer: null })}>Cancel</Button>
             <Button onClick={handleUpdate}>Update Customer</Button>

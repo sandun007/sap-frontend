@@ -101,6 +101,15 @@ const menuItems = [
           { title: "Supplier List", url: "/supplier/list", icon: List },
         ]
       },
+        {
+            title: "Employee",
+            url: "/supplier",
+            icon: Users,
+            subItems: [
+                { title: "Add Employee", url: "/employee/add", icon: Plus },
+                { title: "Employee List", url: "/employee/list", icon: List },
+            ]
+        },
     ]
   },
   {

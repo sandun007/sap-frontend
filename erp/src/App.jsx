@@ -22,6 +22,8 @@ import ListCustomer from "./pages/customer/ListCustomer";
 import ListDepartment from "./pages/department/ListDepartment";
 import ListBranch from "@/pages/branch/ListBranch";
 import ListSupplier from "@/pages/supplier/ListSupplier.jsx";
+import AddEmployee from "@/pages/employee/AddEmployee.jsx";
+import ListEmployee from "@/pages/employee/ListEmployee.jsx";
 
 
 function App() {
@@ -67,6 +69,10 @@ function App() {
                     {/* supplier */}
                     <Route path="/supplier/add*" element={<AddSupplier/>} />
                     <Route path="/supplier/list*" element={<ListSupplier/>} />
+
+                    {/*employee*/}
+                    <Route path="/employee/add*" element={<AddEmployee/>} />
+                    <Route path="/employee/list*" element={<ListEmployee/>} />
 
                 </Route>
                 <Route path="/login" element={<Login/>}/>

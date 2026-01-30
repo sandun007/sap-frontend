@@ -456,62 +456,67 @@ export default function ListProduct() {
           </DialogHeader>
           <div className="grid gap-4 py-4">
 
-              <div className="space-y-2">
-                <Label htmlFor="edit-name">Product Name</Label>
-                <Input
-                  id="edit-name"
-                  value={editForm.product_name || ''}
-                  onChange={(e) => setEditForm({...editForm, product_name: e.target.value})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-product-id">Product ID</Label>
-                <Input
-                  id="edit-product-id"
-                  value={editForm.product_id || ''}
-                  onChange={(e) => setEditForm({...editForm, product_id: e.target.value})}
-                />
-              </div>
-
-
-              <div className="space-y-2">
-                <Label htmlFor="edit-price">Unit Price</Label>
-                <Input
-                  id="edit-price"
-                  type="number"
-                  value={editForm.unit_price || ''}
-                  onChange={(e) => setEditForm({...editForm, unit_price: parseFloat(e.target.value)})}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="edit-cost">Cost Price</Label>
-                <Input
-                  id="edit-cost"
-                  type="number"
-                  value={editForm.cost_price || ''}
-                  onChange={(e) => setEditForm({...editForm, cost_price: parseFloat(e.target.value)})}
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-name">Product Name</Label>
+                      <Input
+                          id="edit-name"
+                          value={editForm.product_name || ''}
+                          onChange={(e) => setEditForm({ ...editForm, product_name: e.target.value })}
+                      />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-product-id">Product ID</Label>
+                      <Input
+                          id="edit-product-id"
+                          value={editForm.product_id || ''}
+                          onChange={(e) => setEditForm({ ...editForm, product_id: e.target.value })}
+                      />
+                  </div>
               </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="edit-stock">Stock Quantity</Label>
-                <Input
-                  id="edit-stock"
-                  type="number"
-                  value={editForm.stock_quantity || ''}
-                  onChange={(e) => setEditForm({...editForm, stock_quantity: parseInt(e.target.value)})}
-                />
+              {/* Unit Price + Cost Price – side by side on md+ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-price">Unit Price</Label>
+                      <Input
+                          id="edit-price"
+                          type="number"
+                          value={editForm.unit_price || ''}
+                          onChange={(e) => setEditForm({ ...editForm, unit_price: parseFloat(e.target.value) })}
+                      />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-cost">Cost Price</Label>
+                      <Input
+                          id="edit-cost"
+                          type="number"
+                          value={editForm.cost_price || ''}
+                          onChange={(e) => setEditForm({ ...editForm, cost_price: parseFloat(e.target.value) })}
+                      />
+                  </div>
               </div>
-              <div className="flex items-center justify-between space-y-0 pt-6">
-                <Label htmlFor="edit-status">Active Status</Label>
-                <Switch
-                  id="edit-status"
-                  checked={editForm.is_active || false}
-                  onCheckedChange={(checked) => setEditForm({...editForm, is_active: checked})}
-                />
+
+              {/* Stock Quantity + Active Status – side by side on md+ */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-stock">Stock Quantity</Label>
+                      <Input
+                          id="edit-stock"
+                          type="number"
+                          value={editForm.stock_quantity || ''}
+                          onChange={(e) => setEditForm({ ...editForm, stock_quantity: parseInt(e.target.value) })}
+                      />
+                  </div>
+                  <div className="flex items-center justify-between pt-6">
+                      <Label htmlFor="edit-status">Active Status</Label>
+                      <Switch
+                          id="edit-status"
+                          checked={editForm.is_active || false}
+                          onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
+                      />
+                  </div>
               </div>
-            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, product: null })}>

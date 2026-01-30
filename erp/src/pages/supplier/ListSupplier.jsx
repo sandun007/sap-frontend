@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { Label } from '@/components/ui/label'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 
@@ -233,22 +234,18 @@ export default function ListSupplier() {
         <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-4">
 
             {/* Header */}
-            <Card>
-                <CardHeader>
-                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-                        <div>
-                            <CardTitle className="text-2xl sm:text-3xl font-bold">
-                                Supplier List
-                            </CardTitle>
-                            <CardDescription>Manage your supplier inventory</CardDescription>
-                        </div>
-                        <Button onClick={handleAddSupplier} className="gap-2">
-                            <Plus className="h-4 w-4" />
-                            Add Supplier
-                        </Button>
-                    </div>
-                </CardHeader>
-            </Card>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+                <div>
+                    <CardTitle className="text-2xl sm:text-3xl font-bold">
+                        Supplier List
+                    </CardTitle>
+                    <CardDescription>Manage your supplier inventory</CardDescription>
+                </div>
+                <Button onClick={handleAddSupplier} className="gap-2">
+                    <Plus className="h-4 w-4" />
+                    Add Supplier
+                </Button>
+            </div>
 
             {/* Search */}
             <Card>
@@ -387,40 +384,47 @@ export default function ListSupplier() {
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
-                            <label htmlFor="">Supplier Name</label>
+                            <Label htmlFor="edit-supplier-name">Supplier Name</Label>
                             <Input
+                                id="edit-supplier-name"
                                 placeholder="Supplier Name"
                                 value={editForm.supplier_name || ''}
                                 onChange={(e) => setEditForm({ ...editForm, supplier_name: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="">Supplier ID</label>
+                            <Label htmlFor="edit-supplier-id">Supplier ID</Label>
                             <Input
+                                id="edit-supplier-id"
                                 value={editForm.supplier_id || ''}
                                 readOnly
                                 className="bg-muted cursor-not-allowed"
                             />
                         </div>
-                        <div className="space-y-2">
-                            <label htmlFor="">Contact Person</label>
-                            <Input
-                                placeholder="Contact Person"
-                                value={editForm.contact_person || ''}
-                                onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
-                            />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-contact-person">Contact Person</Label>
+                                <Input
+                                    id="edit-contact-person"
+                                    placeholder="Contact Person"
+                                    value={editForm.contact_person || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, contact_person: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-phone">Phone Number</Label>
+                                <Input
+                                    id="edit-phone"
+                                    placeholder="Phone"
+                                    value={editForm.phone || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                />
+                            </div>
                         </div>
                         <div className="space-y-2">
-                            <label htmlFor="">Phone Number</label>
+                            <Label htmlFor="edit-email">Email</Label>
                             <Input
-                                placeholder="Phone"
-                                value={editForm.phone || ''}
-                                onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <label htmlFor="">Email</label>
-                            <Input
+                                id="edit-email"
                                 placeholder="Email"
                                 value={editForm.email || ''}
                                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
