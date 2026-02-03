@@ -134,7 +134,7 @@ export default function AddEmployee() {
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="full_name">Full Name *</Label>
+                                    <Label htmlFor="full_name">Full Name</Label>
                                     <Input
                                         id="full_name"
                                         value={formData.full_name}
@@ -189,7 +189,7 @@ export default function AddEmployee() {
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-2">
-                                        <Label htmlFor="position">Position*</Label>
+                                        <Label htmlFor="position">Position</Label>
                                         <Input
                                             id="position"
                                             value={formData.position}

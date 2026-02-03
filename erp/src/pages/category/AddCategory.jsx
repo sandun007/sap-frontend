@@ -1,251 +1,272 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Switch } from '@/components/ui/switch'
-import { Badge } from '@/components/ui/badge'
-import { toast } from 'sonner'
-import { Save, X, FolderOpen, Calendar, CheckCircle2 } from 'lucide-react'
+import React, { useState } from 'react';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
+import { Save, X, FolderOpen, Calendar, CheckCircle2 } from 'lucide-react';
+import axios from 'axios';
 
 export default function AddCategory() {
+    const generateCategoryId = () => {
+        const timestamp = Date.now().toString().slice(-6);
+        const random = Math.random().toString(36).substr(2, 4).toUpperCase();
+        return `CAT-${timestamp}-${random}`;
+    };
+
+    const [categoryId] = useState(generateCategoryId());
     const [formData, setFormData] = useState({
         category_name: '',
         description: '',
         created_date: '',
-        is_active: true
-    })
-
-    const [categoryId, setCategoryId] = useState(generateCategoryId())
-
-    // Generate category ID
-    function generateCategoryId() {
-        const timestamp = Date.now().toString().slice(-6)
-        const random = Math.random().toString(36).substr(2, 4).toUpperCase()
-        return `CAT-${timestamp}-${random}`
-    }
+        is_active: true,
+    });
 
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
             ...prev,
-            [field]: value
-        }))
-    }
+            [field]: value,
+        }));
+    };
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
+        e.preventDefault();
 
-        // Basic validation
-        if (!formData.category_name) {
-            toast.error("Please enter category name")
-            return
+        if (!formData.category_name.trim()) {
+            toast.error('Please enter category name');
+            return;
         }
 
         try {
-            // API call would go here
-            const response = await fetch('YOUR_API_URL/categories', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer YOUR_TOKEN'
-                },
-                body: JSON.stringify(formData)
-            })
+            const token = localStorage.getItem('token');
 
-            if (response.ok) {
-                toast.success("Category added successfully!")
+            const payload = {
+                category_name: formData.category_name,
+                category_code: categoryId,
+                description: formData.description || null,
+                created_date: formData.created_date || null,
+                is_active: formData.is_active ? 1 : 0,
+            };
 
-                // Reset
-                setFormData({
-                    category_name: '',
-                    description: '',
-                    created_date: '',
-                    is_active: true
-                })
-                setCategoryId(generateCategoryId())
-            } else {
-                const error = await response.json()
-                toast.error(error.message || "Failed to add category")
-            }
+            const response = await axios.post(
+                'http://127.0.0.1:8000/api/categories',
+                payload,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            toast.success(response.data.message || 'Category added successfully!');
+
+            // Reset form
+            setFormData({
+                category_name: '',
+                description: '',
+                created_date: '',
+                is_active: true,
+            });
+
         } catch (error) {
-            console.error('Error:', error)
-            toast.error("An error occurred while adding category")
+            console.error(error);
+            const msg =
+                error.response?.data?.message ||
+                error.message ||
+                'Failed to add category';
+            toast.error(msg);
         }
-    }
+    };
 
     const handleClear = () => {
         setFormData({
             category_name: '',
             description: '',
             created_date: '',
-            is_active: true
-        })
-        setCategoryId(generateCategoryId())
-        toast.info("Form cleared")
-    }
+            is_active: true,
+        });
+        toast.info('Form cleared');
+    };
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-7xl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold">Add New Category</h1>
-                    <p className="text-muted-foreground text-sm sm:text-base">Create a new category in your system</p>
+                    <p className="text-muted-foreground">
+                        Create a new category for your products/items
+                    </p>
                 </div>
-                <Badge variant="secondary" className="text-sm px-3 py-1">
+                <Badge variant="secondary" className="text-base px-4 py-1.5">
                     Category ID: {categoryId}
                 </Badge>
             </div>
 
-            <div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - Category Details */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Category Information</CardTitle>
-                                <CardDescription>Enter category basic details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="category_name">Category Name *</Label>
-                                    <div className="relative">
-                                        <FolderOpen className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="category_name"
-                                            value={formData.category_name}
-                                            onChange={(e) => handleInputChange('category_name', e.target.value)}
-                                            placeholder="Enter category name"
-                                            className="pl-10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="description">Description</Label>
-                                    <Textarea
-                                        id="description"
-                                        value={formData.description}
-                                        onChange={(e) => handleInputChange('description', e.target.value)}
-                                        placeholder="Enter category description"
-                                        rows={4}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+                <div className="space-y-6">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Category Information</CardTitle>
+                            <CardDescription>Basic details of the category</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-5">
+                            <div className="space-y-2">
+                                <Label htmlFor="category_name">Category Name *</Label>
+                                <div className="relative">
+                                    <FolderOpen className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="category_name"
+                                        value={formData.category_name}
+                                        onChange={(e) => handleInputChange('category_name', e.target.value)}
+                                        placeholder="e.g. Electronics, Clothing, Books..."
+                                        className="pl-10"
+                                        required
                                     />
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="created_date">Created Date</Label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="created_date"
-                                            type="date"
-                                            value={formData.created_date}
-                                            onChange={(e) => handleInputChange('created_date', e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => handleInputChange('description', e.target.value)}
+                                    placeholder="Brief description about this category (optional)"
+                                    rows={4}
+                                />
+                            </div>
 
-                    {/* Right Column - Status & Preview */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Category Status</CardTitle>
-                                <CardDescription>Set category active status</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="flex items-center justify-between p-4 border rounded-lg">
-                                    <div className="flex items-center gap-3">
-                                        <CheckCircle2 className={`h-5 w-5 ${formData.is_active ? 'text-green-600' : 'text-gray-400'}`} />
-                                        <div>
-                                            <Label htmlFor="is_active" className="cursor-pointer font-medium">
-                                                Active Status
-                                            </Label>
-                                            <p className="text-sm text-muted-foreground">
-                                                {formData.is_active ? 'Category is active' : 'Category is inactive'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <Switch
-                                        id="is_active"
-                                        checked={formData.is_active}
-                                        onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+                            <div className="space-y-2">
+                                <Label htmlFor="created_date">Created Date</Label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-3.5 h-4 w-4 text-muted-foreground" />
+                                    <Input
+                                        id="created_date"
+                                        type="date"
+                                        value={formData.created_date}
+                                        onChange={(e) => handleInputChange('created_date', e.target.value)}
+                                        className="pl-10"
                                     />
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        {/* Category Preview Card */}
-                        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200">
-                            <CardHeader>
-                                <CardTitle className="text-purple-900">Category Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-start gap-2">
-                                    <FolderOpen className="h-5 w-5 text-purple-600 mt-0.5" />
+
+                    <Card>
+                        <CardHeader className="pb-3">
+                            <CardTitle>Status</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="flex items-center justify-between p-4 border rounded-lg">
+                                <div className="flex items-center gap-3">
+                                    <CheckCircle2
+                                        className={`h-5 w-5 ${
+                                            formData.is_active ? 'text-green-600' : 'text-gray-400'
+                                        }`}
+                                    />
                                     <div>
-                                        <p className="font-semibold text-lg">{formData.category_name || 'Category Name'}</p>
-                                        {formData.description && (
-                                            <p className="text-sm text-gray-600 mt-1">{formData.description}</p>
-                                        )}
+                                        <p className="font-medium">Active Status</p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {formData.is_active
+                                                ? 'This category is visible and usable'
+                                                : 'This category is hidden/inactive'}
+                                        </p>
                                     </div>
                                 </div>
+                                <Switch
+                                    checked={formData.is_active}
+                                    onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+                                />
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
 
+                <div className="space-y-6 lg:sticky lg:top-6 h-fit">
+                    <Card className="border-purple-200 bg-linear-to-br from-purple-50/70 to-pink-50/40 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-blue-800">Live Preview</CardTitle>
+                            <CardDescription>How this category will appear</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-start gap-3">
+                                <div className="rounded-full bg-purple-100 p-2 mt-0.5">
+                                    <FolderOpen className="h-5 w-5 text-blue-800" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-lg">
+                                        {formData.category_name.trim() || 'Category Name'}
+                                    </p>
+                                    {formData.description.trim() && (
+                                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                                            {formData.description}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-purple-100 flex flex-wrap gap-3 text-sm">
                                 {formData.created_date && (
-                                    <div className="flex items-center gap-2 text-sm pt-2 border-t">
+                                    <div className="flex items-center gap-2">
                                         <Calendar className="h-4 w-4 text-purple-600" />
-                                        <span>Created: {new Date(formData.created_date).toLocaleDateString()}</span>
+                                        <span>
+                      Created:{' '}
+                                            {new Date(formData.created_date).toLocaleDateString()}
+                    </span>
                                     </div>
                                 )}
 
-                                <div className="flex items-center gap-2 pt-2">
-                                    <Badge variant={formData.is_active ? "default" : "secondary"}>
-                                        {formData.is_active ? 'Active' : 'Inactive'}
-                                    </Badge>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                <Badge
+                                    variant={formData.is_active ? 'default' : 'secondary'}
+                                    className={
+                                        formData.is_active
+                                            ? 'bg-green-600 hover:bg-green-700'
+                                            : ''
+                                    }
+                                >
+                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
 
-                        {/* Info Card */}
-                        <Card className="border-blue-200 bg-blue-50">
-                            <CardContent className="pt-6">
-                                <div className="flex gap-3">
-                                    <div className="text-blue-600">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                                        </svg>
-                                    </div>
-                                    <div className="text-sm text-blue-900">
-                                        <p className="font-medium mb-1">Category Tips:</p>
-                                        <ul className="space-y-1 text-blue-800">
-                                            <li>• Use clear, descriptive names</li>
-                                            <li>• Add detailed descriptions</li>
-                                            <li>• Activate when ready to use</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                                <Badge variant="outline">ID: {categoryId}</Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6 pt-6 border-t">
-                    <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
-                        <X className="h-4 w-4 mr-2" />
-                        Clear
-                    </Button>
-                    <Button type="button" onClick={handleSubmit} className="w-full sm:w-auto gap-2">
-                        <Save className="h-4 w-4" />
-                        Save Category
-                    </Button>
                 </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row justify-end gap-4 mt-8 pt-6 border-t">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={handleClear}
+                >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Form
+                </Button>
+                <Button
+                    type="button"
+                    onClick={handleSubmit}
+                    className="w-full sm:w-auto gap-2"
+                >
+                    <Save className="h-4 w-4" />
+                    Save Category
+                </Button>
+            </div>
         </div>
-    )
+    );
 }

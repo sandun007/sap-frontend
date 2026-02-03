@@ -9,6 +9,7 @@ import { Save, X, Building2, Mail, Phone, Globe, User, Calendar } from 'lucide-r
 import axios from 'axios'
 
 export default function AddBrand() {
+    // Helper function to format date as YYYY-MM-DD
     const formatDate = (date) => {
         const year = date.getFullYear()
         const month = String(date.getMonth() + 1).padStart(2, '0')
@@ -206,43 +207,43 @@ export default function AddBrand() {
 
                     {/* Preview Card */}
                     <div className="space-y-6">
-                        <Card className="bg-linear-to-br from-blue-50 to-indigo-50 border-blue-200">
+                        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
                             <CardHeader>
                                 <CardTitle className="text-blue-900">Brand Preview</CardTitle>
                                 <CardDescription>Live preview of brand details</CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-3">
                                 <div className="flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-blue-600 shrink-0" />
+                                    <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                     <span className="font-semibold text-sm">{formData.brand_name || 'Brand Name'}</span>
                                 </div>
                                 {formData.contact_person && (
                                     <div className="flex items-center gap-2 text-sm">
-                                        <User className="h-4 w-4 text-blue-600 shrink-0" />
+                                        <User className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                         <span className="text-gray-700">{formData.contact_person}</span>
                                     </div>
                                 )}
                                 {formData.phone && (
                                     <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="h-4 w-4 text-blue-600 shrink-0" />
+                                        <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                         <span className="text-gray-700">{formData.phone}</span>
                                     </div>
                                 )}
                                 {formData.email && (
                                     <div className="flex items-center gap-2 text-sm">
-                                        <Mail className="h-4 w-4 text-blue-600 shrink-0" />
+                                        <Mail className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                         <span className="text-gray-700">{formData.email}</span>
                                     </div>
                                 )}
                                 {formData.website && (
                                     <div className="flex items-center gap-2 text-sm">
-                                        <Globe className="h-4 w-4 text-blue-600 shrink-0" />
+                                        <Globe className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                         <span className="text-blue-600 underline break-all">{formData.website}</span>
                                     </div>
                                 )}
                                 {formData.created_date && (
                                     <div className="flex items-center gap-2 text-sm pt-2 border-t border-blue-200">
-                                        <Calendar className="h-4 w-4 text-blue-600 shrink-0" />
+                                        <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
                                         <span className="text-gray-600">{formData.created_date}</span>
                                     </div>
                                 )}
