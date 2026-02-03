@@ -43,36 +43,36 @@ function App() {
 
 
                     {/* product */}
-                    <Route path="/products/add*" element={<AddProduct/>} />
-                    <Route path="/products/list*" element={<ListProduct/>} />
+                    <Route path="/products/add/*" element={<AddProduct/>} />
+                    <Route path="/products/list/*" element={<ListProduct/>} />
 
                     {/* brand */}
-                    <Route path="/brand/add*" element={<AddBrand/>} />
-                    <Route path="/brand/list*" element={<ListBrand/>} />
+                    <Route path="/brand/add/*" element={<AddBrand/>} />
+                    <Route path="/brand/list/*" element={<ListBrand/>} />
 
                     {/* category */}
-                    <Route path="/category/add*" element={<AddCategory/>} />
-                    <Route path="/category/list*" element={<ListCategory/>} />
+                    <Route path="/category/add/*" element={<AddCategory/>} />
+                    <Route path="/category/list/*" element={<ListCategory/>} />
 
                     {/* branch */}
-                    <Route path="/branch/add*" element={<AddBranch/>} />
-                    <Route path="/branch/list*" element={<ListBranch/>} />
+                    <Route path="/branch/add/*" element={<AddBranch/>} />
+                    <Route path="/branch/list/*" element={<ListBranch/>} />
 
                     {/* department */}
-                    <Route path="/department/add*" element={<AddDepartment/>} />
-                    <Route path="/department/list*" element={<ListDepartment/>} />
+                    <Route path="/department/add/*" element={<AddDepartment/>} />
+                    <Route path="/department/list/*" element={<ListDepartment/>} />
 
                     {/* customer */}
-                    <Route path="/customer/add*" element={<AddCustomer/>} />
-                    <Route path="/customer/list*" element={<ListCustomer/>} />
+                    <Route path="/customer/add/*" element={<AddCustomer/>} />
+                    <Route path="/customer/list/*" element={<ListCustomer/>} />
 
                     {/* supplier */}
-                    <Route path="/supplier/add*" element={<AddSupplier/>} />
-                    <Route path="/supplier/list*" element={<ListSupplier/>} />
+                    <Route path="/supplier/add/*" element={<AddSupplier/>} />
+                    <Route path="/supplier/list/*" element={<ListSupplier/>} />
 
                     {/*employee*/}
-                    <Route path="/employee/add*" element={<AddEmployee/>} />
-                    <Route path="/employee/list*" element={<ListEmployee/>} />
+                    <Route path="/employee/add/*" element={<AddEmployee/>} />
+                    <Route path="/employee/list/*" element={<ListEmployee/>} />
 
                 </Route>
                 <Route path="/login" element={<Login/>}/>
