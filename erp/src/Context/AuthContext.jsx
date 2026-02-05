@@ -14,19 +14,20 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (token) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            fetchUser();
+            // fetchUser();
+            setIsAuthenticated(true);
         }
     }, [token]);
 
-    const fetchUser = async () => {
-        try {
-            const res = await axios.get('/me');
-            setUser(res.data.user);
-            setIsAuthenticated(true);
-        } catch (err) {
-            logout();
-        }
-    };
+    // const fetchUser = async () => {
+    //     try {
+    //         const res = await axios.get('/me');
+    //         setUser(res.data.user);
+    //         setIsAuthenticated(true);
+    //     } catch (err) {
+    //         logout();
+    //     }
+    // };
 
     const login = async (email, password) => {
         try {
@@ -34,7 +35,7 @@ export const AuthProvider = ({ children }) => {
 
             localStorage.setItem('token', res.data.token);
             setToken(res.data.token);
-            setUser(res.data.user);
+            // setUser(res.data.user);
             setIsAuthenticated(true);
 
             axios.defaults.headers.common['Authorization'] =

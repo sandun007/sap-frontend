@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect} from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -46,6 +46,7 @@ import {
     FileText,
     Upload
 } from 'lucide-react'
+import axios from 'axios'
 
 // Temporary data
 const initialSuppliers = [
@@ -81,12 +82,25 @@ export default function ListSupplier() {
     const [editForm, setEditForm] = useState({})
     const [importDialog, setImportDialog] = useState(false)
     const fileInputRef = useRef(null)
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
     const filteredSuppliers = suppliers.filter(sup =>
-        sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sup.supplier_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (sup.contact_person && sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (sup.email && sup.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+        (sup.supplier_name ? sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.supplier_id ? String(sup.supplier_id).toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.contact_person ? sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.email ? sup.email.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    );
+
+    useEffect(() => {
+        fetchSuppliers()
+    }, [])
+
+    const fetchSuppliers = async () => {
+        setLoading(true)
+        const response = await axios.get('/suppliers')
+        setSuppliers(response.data.data || [])
+        toast.success('Suppliers loaded')
+    }
 
     // Generate unique supplier ID
     const generateSupplierId = () => {
@@ -206,20 +220,28 @@ export default function ListSupplier() {
         toast.success("Supplier import template downloaded successfully.")
     }
 
-    const handleDelete = (supplierId) => {
-        setSuppliers(suppliers.filter(sup => sup.supplier_id !== supplierId))
-        setDeleteDialog({ open: false, supplier: null })
-        toast.success("Supplier deleted successfully")
-    }
+    const handleDelete = async (supplierId) => {
+        try {
+            await axios.delete(`/suppliers/${supplierId}`);
+            toast.success('Supplier deleted successfully');
+            setDeleteDialog({ open: false, supplier: null });
+            fetchSuppliers();
+        } catch (error) {
+            toast.error('Failed to delete supplier: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
-    const handleUpdate = () => {
-        setSuppliers(suppliers.map(sup =>
-            sup.supplier_id === editForm.supplier_id ? { ...sup, ...editForm } : sup
-        ))
-        setEditDialog({ open: false, supplier: null })
-        setEditForm({})
-        toast.success("Supplier updated successfully")
-    }
+    const handleUpdate = async () => {
+        try {
+            await axios.put(`/suppliers/${editForm.supplier_id}`, editForm);
+            toast.success('Supplier updated successfully');
+            setEditDialog({ open: false, supplier: null });
+            setEditForm({});
+            fetchSuppliers();
+        } catch (error) {
+            toast.error('Failed to update supplier: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     const openEditDialog = (supplier) => {
         setEditDialog({ open: true, supplier })
@@ -231,7 +253,7 @@ export default function ListSupplier() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -249,7 +271,7 @@ export default function ListSupplier() {
 
             {/* Search */}
             <Card>
-                <CardContent className="p-6">
+                <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
