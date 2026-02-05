@@ -103,7 +103,7 @@ export default function ListBrand() {
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
         return `BRAND-${timestamp}-${random}`
     }
-
+//Export to Excel
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredBrands.map(b => ({
@@ -126,7 +126,7 @@ export default function ListBrand() {
             toast.error("Failed to export brands to Excel.")
         }
     }
-
+//Export to PDF
     const exportToPDF = () => {
         try {
             const doc = new jsPDF()
@@ -165,6 +165,7 @@ export default function ListBrand() {
         }
     }
 
+    // Handle Excel file import
     const handleFileUpload = (event) => {
         const file = event.target.files[0]
         if (!file) return
@@ -198,7 +199,7 @@ export default function ListBrand() {
         }
         reader.readAsArrayBuffer(file)
     }
-
+    // Download import template
     const downloadTemplate = () => {
         const templateData = [{
             'Brand ID': 'BRAND-XXXXXX-XXXX',
@@ -218,29 +219,24 @@ export default function ListBrand() {
         toast.success("Brand import template downloaded successfully.")
     }
 //DELETE
-    const handleDelete = async () => {
-        const brand = deleteDialog.brand
-        if (!brand?.id) return
-
+    const handleDelete = async (brandId) => {
         try {
-            await axios.delete(`/brands/${brand.id}`)
-            toast.success('Brand deleted successfully')
-            setDeleteDialog({ open: false, brand: null })
-            fetchBrands()
+            await axios.delete(`/brands/${brandId}`);
+            toast.success('Brand deleted successfully');
+            setDeleteDialog({ open: false, brand: null });
+            fetchBrands();
         } catch (error) {
             toast.error('Failed to delete brand: ' + (error.response?.data?.message || error.message))
         }
     }
 //UPDATE
     const handleUpdate = async () => {
-        if (!editForm?.id) return
-
         try {
-            await axios.put(`/brands/${editForm.id}`, editForm)
-            toast.success('Brand updated successfully')
-            setEditDialog({ open: false, brand: null })
-            setEditForm({})
-            fetchBrands()
+            await axios.put(`/brands/${editForm.brand_id}`, editForm);
+            toast.success('Brand updated successfully');
+            setEditDialog({ open: false, brand: null });
+            setEditForm({});
+            fetchBrands();
         } catch (error) {
             toast.error('Failed to update brand: ' + (error.response?.data?.message || error.message))
         }
@@ -248,20 +244,13 @@ export default function ListBrand() {
 
     const openEditDialog = (brand) => {
         setEditDialog({ open: true, brand })
-        setEditForm({ ...brand })
+        setEditForm(brand)
     }
 
     const handleAddBrand = () => {
         window.location.href = '/brand/add'
     }
 
-    if (loading) {
-        return (
-            <div className="container mx-auto px-4 py-20 text-center">
-                <p className="text-lg text-muted-foreground animate-pulse">Loading brands...</p>
-            </div>
-        )
-    }
 
     return (
         <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
@@ -279,27 +268,27 @@ export default function ListBrand() {
 
             {/* Search & Actions */}
             <Card>
-                <CardContent className="p-6">
+                <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search brands by name, ID or email..."
+                                placeholder="Search brands..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
                             />
                         </div>
                         <div className="flex gap-2 flex-wrap">
-                            <Button variant="outline" onClick={exportToExcel} className="gap-2">
+                            <Button variant="outline" onClick={exportToExcel} className="gap-2 flex-1 sm:flex-none">
                                 <Download className="h-4 w-4" />
                                 Excel
                             </Button>
-                            <Button variant="outline" onClick={exportToPDF} className="gap-2">
+                            <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
                                 <FileText className="h-4 w-4" />
                                 PDF
                             </Button>
-                            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2">
+                            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2 flex-1 sm:flex-none">
                                 <Upload className="h-4 w-4" />
                                 Import
                             </Button>
@@ -389,14 +378,13 @@ export default function ListBrand() {
                         <DialogTitle>Delete Brand</DialogTitle>
                         <DialogDescription>
                             Are you sure you want to delete "{deleteDialog.brand?.brand_name}"?
-                            <br />This action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setDeleteDialog({ open: false, brand: null })}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={() => handleDelete()}>
+                        <Button variant="destructive" onClick={() => handleDelete(deleteDialog.brand?.brand_id)}>
                             Delete
                         </Button>
                     </DialogFooter>
