@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Save, X, Building2, Mail, Phone, Globe, User, Calendar } from 'lucide-react'
+import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
 import axios from 'axios'
 
 export default function AddBrand() {
@@ -119,138 +119,87 @@ export default function AddBrand() {
             </div>
 
             <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Info */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Brand Information</CardTitle>
-                                <CardDescription>Basic details and primary contact</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="brand_name">Brand Name *</Label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="brand_name"
-                                            value={formData.brand_name}
-                                            onChange={(e) => handleInputChange('brand_name', e.target.value)}
-                                            placeholder="Enter brand name"
-                                            className="pl-10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Brand Information</CardTitle>
+                        <CardDescription>Basic details and primary contact</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="brand_name">Brand Name</Label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="brand_name"
+                                    value={formData.brand_name}
+                                    onChange={(e) => handleInputChange('brand_name', e.target.value)}
+                                    placeholder="Enter brand name"
+                                    className="pl-10"
+                                    required
+                                />
+                            </div>
+                        </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="contact_person">Contact Person</Label>
-                                        <div className="relative">
-                                            <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                            <Input
-                                                id="contact_person"
-                                                value={formData.contact_person}
-                                                onChange={(e) => handleInputChange('contact_person', e.target.value)}
-                                                placeholder="Enter contact person name"
-                                                className="pl-10"
-                                            />
-                                        </div>
-                                    </div>
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Phone Number</Label>
-                                        <div className="relative">
-                                            <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                            <Input
-                                                id="phone"
-                                                value={formData.phone}
-                                                onChange={(e) => handleInputChange('phone', e.target.value)}
-                                                placeholder="+94 XX XXX XXXX"
-                                                className="pl-10"
-                                                maxLength={20}
-                                            />
-                                        </div>
-                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="contact_person">Contact Person</Label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="contact_person"
+                                        value={formData.contact_person}
+                                        onChange={(e) => handleInputChange('contact_person', e.target.value)}
+                                        placeholder="Enter contact person name"
+                                        className="pl-10"
+                                    />
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone}
+                                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                                        placeholder="+94 XX XXX XXXX"
+                                        className="pl-10"
+                                        maxLength={20}
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email Address</Label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => handleInputChange('email', e.target.value)}
-                                            placeholder="brand@example.com"
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => handleInputChange('email', e.target.value)}
+                                    placeholder="brand@example.com"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="website">Website</Label>
-                                    <div className="relative">
-                                        <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="website"
-                                            value={formData.website}
-                                            onChange={(e) => handleInputChange('website', e.target.value)}
-                                            placeholder="https://www.example.com"
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Preview Card */}
-                    <div className="space-y-6">
-                        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                            <CardHeader>
-                                <CardTitle className="text-blue-900">Brand Preview</CardTitle>
-                                <CardDescription>Live preview of brand details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                    <span className="font-semibold text-sm">{formData.brand_name || 'Brand Name'}</span>
-                                </div>
-                                {formData.contact_person && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <User className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-gray-700">{formData.contact_person}</span>
-                                    </div>
-                                )}
-                                {formData.phone && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-gray-700">{formData.phone}</span>
-                                    </div>
-                                )}
-                                {formData.email && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Mail className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-gray-700">{formData.email}</span>
-                                    </div>
-                                )}
-                                {formData.website && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Globe className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-blue-600 underline break-all">{formData.website}</span>
-                                    </div>
-                                )}
-                                {formData.created_date && (
-                                    <div className="flex items-center gap-2 text-sm pt-2 border-t border-blue-200">
-                                        <Calendar className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                                        <span className="text-gray-600">{formData.created_date}</span>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="website">Website</Label>
+                            <div className="relative">
+                                <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="website"
+                                    value={formData.website}
+                                    onChange={(e) => handleInputChange('website', e.target.value)}
+                                    placeholder="https://www.example.com"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Action Buttons */}
                 <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8 pt-6 border-t">

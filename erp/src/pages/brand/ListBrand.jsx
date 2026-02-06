@@ -72,32 +72,25 @@ export default function ListBrand() {
     const [editForm, setEditForm] = useState({})
     const fileInputRef = useRef(null)
     const [loading, setLoading] = useState(true)
-
+    const [error, setError] = useState(null);
     const filteredBrands = brands.filter(brand =>
-        brand.brand_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.brand_id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.contact_person?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        brand.email?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+        (brand.brand_name ? brand.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (brand.brand_id  ? String(brand.brand_id).toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (brand.contact_person ? brand.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (brand.email ? brand.email.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    );
 
     useEffect(() => {
         fetchBrands()
     }, [])
 
     const fetchBrands = async () => {
-        try {
-            setLoading(true)
-            const response = await axios.get('/brands')
-            setBrands(response.data.data || [])
-            toast.success('Brands loaded')
-        } catch (error) {
-            toast.error('Failed to load brands')
-            console.error('Fetch error:', error)
-        } finally {
-            setLoading(false)
-        }
+        setLoading(true)
+        const response = await axios.get('/brands')
+        setBrands(response.data.data || [])
+        toast.success('Brands loaded')
     }
-
+//generate id
     function generateBrandId() {
         const timestamp = Date.now().toString().slice(-6)
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
@@ -120,9 +113,9 @@ export default function ListBrand() {
             const workbook = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Brands')
             XLSX.writeFile(workbook, `brands_export_${new Date().toISOString().split('T')[0]}.xlsx`)
-
             toast.success(`Exported ${filteredBrands.length} brands to Excel.`)
         } catch (error) {
+            console.error(error)
             toast.error("Failed to export brands to Excel.")
         }
     }
@@ -130,7 +123,6 @@ export default function ListBrand() {
     const exportToPDF = () => {
         try {
             const doc = new jsPDF()
-
             doc.setFontSize(20)
             doc.text('Brand List', 14, 22)
             doc.setFontSize(10)
@@ -154,7 +146,7 @@ export default function ListBrand() {
                 styles: { fontSize: 9 },
                 headStyles: { fillColor: [59, 130, 246] },
                 columnStyles: {
-                    5: { cellWidth: 28 }  // slightly more space for date
+                    5: { cellWidth: 28 }
                 }
             })
 
@@ -189,16 +181,25 @@ export default function ListBrand() {
                     is_active: item['Status']?.toLowerCase() === 'active',
                     created_date: new Date().toISOString().split('T')[0]
                 }))
+                axios.post('/brands/import', { brands: newBrands })
+                    .then(response => {
+                        setBrands(prev => [...prev, ...newBrands])
+                        setImportDialog(false)
+                        toast.success(`Successfully imported ${newBrands.length} brands.`)
+                    })
+                    .catch ((error)=> {
+                        const message = error.response?.data?.message || "Failed to save imported brands to server.";
+                        toast.error(message);
+                    })
 
-                setBrands(prev => [...prev, ...newBrands])
-                setImportDialog(false)
-                toast.success(`Successfully imported ${newBrands.length} brands.`)
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
         }
         reader.readAsArrayBuffer(file)
     }
+
+
     // Download import template
     const downloadTemplate = () => {
         const templateData = [{
@@ -218,7 +219,8 @@ export default function ListBrand() {
 
         toast.success("Brand import template downloaded successfully.")
     }
-//DELETE
+
+    //DELETE
     const handleDelete = async (brandId) => {
         try {
             await axios.delete(`/brands/${brandId}`);
@@ -229,7 +231,8 @@ export default function ListBrand() {
             toast.error('Failed to delete brand: ' + (error.response?.data?.message || error.message))
         }
     }
-//UPDATE
+
+    //UPDATE
     const handleUpdate = async () => {
         try {
             await axios.put(`/brands/${editForm.brand_id}`, editForm);
@@ -266,7 +269,7 @@ export default function ListBrand() {
                 </Button>
             </div>
 
-            {/* Search & Actions */}
+            {/* Search  */}
             <Card>
                 <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4">
