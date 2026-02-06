@@ -190,9 +190,17 @@ export default function ListSupplier() {
                     created_date: new Date().toISOString().split('T')[0]
                 }))
 
-                setSuppliers(prev => [...prev, ...newSuppliers])
-                setImportDialog(false)
-                toast.success(`Successfully imported ${newSuppliers.length} suppliers.`)
+                axios.post('/suppliers/import', { suppliers: newSuppliers })
+                    .then(response => {
+                        setSuppliers(prev => [...prev, ...newSuppliers])
+                        setImportDialog(false)
+                        toast.success(`Successfully imported ${newSuppliers.length} suppliers.`)
+                    })
+                    .catch((error) => {
+                        const message = error.response?.data?.message || "Failed to save imported suppliers to server.";
+                        toast.error(message);
+                    })
+
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
@@ -450,6 +458,15 @@ export default function ListSupplier() {
                                 placeholder="Email"
                                 value={editForm.email || ''}
                                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-email">Address</Label>
+                            <Input
+                                id="edit-address"
+                                placeholder="Address"
+                                value={editForm.address || ''}
+                                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                             />
                         </div>
                     </div>
