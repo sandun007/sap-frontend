@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
 import axios from 'axios'
-
 export default function AddBrand() {
     // function format date as YYYY-MM-DD
     const formatDate = (date) => {
@@ -18,6 +17,7 @@ export default function AddBrand() {
     }
 
     const [formData, setFormData] = useState({
+        brand_id:generateBrandId(),
         brand_name: '',
         contact_person: '',
         phone: '',
@@ -25,8 +25,6 @@ export default function AddBrand() {
         website: '',
         created_date: formatDate(new Date())
     })
-
-    const [brandId, setBrandId] = useState(generateBrandId())
 
     // Generate brand ID
     function generateBrandId() {
@@ -51,12 +49,6 @@ export default function AddBrand() {
             return
         }
 
-        // Email validation
-        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            toast.error("Please enter a valid email address")
-            return
-        }
-
         try {
             const response = await axios.post('/brands', formData)
             const newBrand = response.data?.data || response.data
@@ -66,6 +58,7 @@ export default function AddBrand() {
 
             // Reset
             setFormData({
+                brand_id: generateBrandId(),
                 brand_name: '',
                 contact_person: '',
                 phone: '',
@@ -73,27 +66,15 @@ export default function AddBrand() {
                 website: '',
                 created_date: formatDate(new Date())
             })
-            setBrandId(generateBrandId())
         } catch (err) {
-            const errorMessage = err.response?.data?.message || err.response?.data?.error || err.message
-            const errorDetails = err.response?.data?.errors || {}
-
+            toast.error("Failed to create brands. Check console for details.")
             console.error("Brand creation failed:", err)
-            console.error("Error response:", err.response?.data)
-
-            toast.error(`Failed to create brand: ${errorMessage}`)
-
-            // Show validation errors if any
-            if (Object.keys(errorDetails).length > 0) {
-                Object.entries(errorDetails).forEach(([field, messages]) => {
-                    toast.error(`${field}: ${messages.join(', ')}`)
-                })
-            }
         }
     }
 
     const handleClear = () => {
         setFormData({
+            brand_id: generateBrandId(),
             brand_name: '',
             contact_person: '',
             phone: '',
@@ -101,7 +82,7 @@ export default function AddBrand() {
             website: '',
             created_date: formatDate(new Date())
         })
-        setBrandId(generateBrandId())
+
         toast.info("Form cleared")
     }
 
@@ -114,7 +95,7 @@ export default function AddBrand() {
                     <p className="text-muted-foreground">Create a new brand record</p>
                 </div>
                 <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 py-0.5 sm:px-3 sm:py-1 self-start sm:self-auto">
-                    Brand ID: {brandId}
+                    Brand ID: {formData.brand_id}
                 </Badge>
             </div>
 
