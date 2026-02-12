@@ -9,7 +9,7 @@ import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
 import axios from 'axios'
 
 export default function AddBrand() {
-    // Helper function to format date as YYYY-MM-DD
+    // function format date as YYYY-MM-DD
     const formatDate = (date) => {
         const year = date.getFullYear()
         const month = String(date.getMonth() + 1).padStart(2, '0')

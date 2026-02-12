@@ -43,6 +43,7 @@ import {
     Tags,
 } from 'lucide-react'
 import axios from 'axios'
+import autoTable from "jspdf-autotable";
 
 export default function ListCategory() {
     const [categories, setCategories] = useState([])
@@ -53,13 +54,11 @@ export default function ListCategory() {
     const [importDialog, setImportDialog] = useState(false)
     const fileInputRef = useRef(null)
     const [loading, setLoading] = useState(true)
-
     const filteredCategories = categories.filter(cat => {
         if (!cat || typeof cat !== 'object') return false
         const term = searchTerm.toLowerCase()
-
         return (
-            (typeof cat.name === 'string' && cat.name.toLowerCase().includes(term)) ||
+            (typeof cat.category_name === 'string' && cat.category_name.toLowerCase().includes(term)) ||
             (typeof cat.category_id === 'string' && cat.category_id.toLowerCase().includes(term)) ||
             (typeof cat.description === 'string' && cat.description.toLowerCase().includes(term))
         )
@@ -73,7 +72,6 @@ export default function ListCategory() {
         try {
             setLoading(true)
             const response = await axios.get('/categories', {})
-
             const data = response.data.data || response.data || []
             setCategories(Array.isArray(data) ? data : [])
             toast.success('Categories loaded successfully')
@@ -92,12 +90,13 @@ export default function ListCategory() {
         }
     }
 
+//generate ID
     const generateCategoryId = () => {
         const timestamp = Date.now().toString().slice(-6)
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
         return `CATE-${timestamp}-${random}`
     }
-
+//Export to Excel
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(
@@ -119,8 +118,13 @@ export default function ListCategory() {
         }
     }
 
+//Export to PDF
     const exportToPDF = () => {
         try {
+            if (!filteredCategories || filteredCategories.length === 0) {
+                toast.error("No brands to export")
+                return
+            }
             const doc = new jsPDF()
             doc.setFontSize(20)
             doc.text('Category List', 14, 22)
@@ -130,32 +134,62 @@ export default function ListCategory() {
 
             const tableColumn = ['Name', 'ID', 'Description', 'Status', 'Created Date']
             const tableRows = filteredCategories.map(cat => [
-                cat.name || '-',
+                cat.category_name || '-',
                 cat.category_id || '-',
                 cat.description || '-',
                 cat.is_active ? 'Active' : 'Inactive',
                 cat.created_date || '-'
             ])
 
-            doc.autoTable({
+           autoTable(doc,{
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,
-                styles: { fontSize: 9 },
-                headStyles: { fillColor: [59, 130, 246] },
-                columnStyles: {
-                    4: { cellWidth: 30 } // slightly wider for date column
-                }
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3,
+                    overflow: 'linebreak'
+                },
+
+                headStyles: {
+                    fillColor: [59, 130, 246] },
+                    textColor: 255,
+               fontStyle: 'bold',
+                    columnStyles: {
+                    4: { cellWidth: 30 }
+                },
+               alternateRowStyles: {
+                   fillColor: [245, 245, 245]
+               },
+               margin: { top: 10 }
             })
 
-            doc.save(`categories_report_${new Date().toISOString().split('T')[0]}.pdf`)
-            toast.success(`PDF generated (${filteredCategories.length} categories)`)
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages()
+            doc.setFontSize(8)
+            doc.setTextColor(150)
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i)
+                doc.text(
+                    `Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                )
+            }
+
+            // PDF  download
+            const fileName = `category_report_${new Date().toISOString().split('T')[0]}.pdf`
+            doc.save(fileName)
+
+            toast.success(`PDF generated! ${filteredCategories.length} category included.`)
         } catch (error) {
-            toast.error('Failed to generate PDF')
-            console.error(error)
+            console.error('PDF generation error:', error)
+            toast.error(`Failed to generate PDF: ${error.message}`)
         }
     }
 
+    // Handle Excel file import
     const handleFileUpload = (event) => {
         const file = event.target.files?.[0]
         if (!file) return
@@ -170,7 +204,7 @@ export default function ListCategory() {
 
                 const newCategories = jsonData.map((item, index) => ({
                     category_id: generateCategoryId(),
-                    name: item['Category Name'] || `Imported ${index + 1}`,
+                    category_name: item['Category Name'] || `Imported ${index + 1}`,
                     description: item['Description'] || '',
                     is_active: String(item['Status'] || '').toLowerCase() === 'active',
                     created_date: new Date().toISOString().split('T')[0]
@@ -188,8 +222,10 @@ export default function ListCategory() {
         reader.readAsArrayBuffer(file)
     }
 
+    // Download import template
     const downloadTemplate = () => {
         const template = [{
+            'Category ID': 'CAT-XXXXXX-XXXX',
             'Category Name': 'Sample Category',
             'Description': 'Category description here',
             'Status': 'Active'
@@ -259,14 +295,14 @@ export default function ListCategory() {
                 </Button>
             </div>
 
-            {/* Search + Export/Import */}
+            {/* Search */}
             <Card>
                 <CardContent className="p-6">
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
-                                placeholder="Search by name, ID or description..."
+                                placeholder="Search category..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="pl-10"
@@ -287,12 +323,12 @@ export default function ListCategory() {
                 </CardContent>
             </Card>
 
-            {/* Main Table Card */}
+            {/* Category Table */}
             <Card>
                 <CardHeader>
                     <CardTitle>Categories</CardTitle>
                     <CardDescription>
-                        {filteredCategories.length} {filteredCategories.length === 1 ? 'category' : 'categories'} found
+                        {filteredCategories.length} categories found
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -309,11 +345,11 @@ export default function ListCategory() {
                         </TableHeader>
                         <TableBody>
                             {filteredCategories.map((category) => (
-                                <TableRow key={category.category_id || category.id || Math.random()}>
+                                <TableRow key={category.category_id || category.category.id }>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
                                             <Tags className="h-5 w-5 text-muted-foreground" />
-                                            <span>{category.name || 'Unnamed'}</span>
+                                            <span>{category.category_name || ''}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-sm">
@@ -402,8 +438,8 @@ export default function ListCategory() {
                             <Label htmlFor="name">Category Name *</Label>
                             <Input
                                 id="name"
-                                value={editForm.name || ''}
-                                onChange={e => setEditForm({ ...editForm, name: e.target.value })}
+                                value={editForm.category_name || ''}
+                                onChange={e => setEditForm({ ...editForm, category_name: e.target.value })}
                             />
                         </div>
                         <div className="space-y-2">

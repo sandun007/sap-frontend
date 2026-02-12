@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import {jsPDF} from 'jspdf'
+import autoTable from 'jspdf-autotable'
 import {
     Plus,
     Search,
@@ -122,40 +122,83 @@ export default function ListBrand() {
 //Export to PDF
     const exportToPDF = () => {
         try {
+            if (!filteredBrands || filteredBrands.length === 0) {
+                toast.error("No brands to export")
+                return
+            }
             const doc = new jsPDF()
             doc.setFontSize(20)
-            doc.text('Brand List', 14, 22)
+            doc.setTextColor(0, 0, 0)
+            doc.text('Brand List Report', 14, 22)
+
             doc.setFontSize(10)
+            doc.setTextColor(100)
             doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
             doc.text(`Total Brands: ${filteredBrands.length}`, 14, 37)
-
-            const tableColumn = ['Brand ID', 'Brand Name', 'Contact', 'Email', 'Status', 'Created']
-            const tableRows = filteredBrands.map(b => [
-                b.brand_id || '-',
-                b.brand_name || '-',
-                b.contact_person || '-',
-                b.email || '-',
-                b.is_active ? 'Active' : 'Inactive',
-                b.created_date || '-'
+            const tableColumn = ['Brand ID', 'Brand Name', 'Contact', 'Email', 'Phone', 'Status']
+            const tableRows = filteredBrands.map(brand => [
+                brand.brand_id || '-',
+                brand.brand_name || '-',
+                brand.contact_person || '-',
+                brand.email || '-',
+                brand.phone || '-',
+                brand.is_active ? 'Active' : 'Inactive'
             ])
 
-            doc.autoTable({
+            autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,
-                styles: { fontSize: 9 },
-                headStyles: { fillColor: [59, 130, 246] },
+                styles: {
+                    fontSize: 9,
+                    cellPadding: 3,
+                    overflow: 'linebreak'
+                },
+                headStyles: {
+                    fillColor: [59, 130, 246],
+                    textColor: 255,
+                    fontStyle: 'bold',
+                    halign: 'center'
+                },
                 columnStyles: {
-                    5: { cellWidth: 28 }
-                }
+                    0: { cellWidth: 30 }, // Brand ID
+                    1: { cellWidth: 35 }, // Brand Name
+                    2: { cellWidth: 30 }, // Contact
+                    3: { cellWidth: 45 }, // Email
+                    4: { cellWidth: 25 }, // Phone
+                    5: { cellWidth: 20, halign: 'center' }  // Status
+                },
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                margin: { top: 10 }
             })
 
-            doc.save(`brands_report_${new Date().toISOString().split('T')[0]}.pdf`)
-            toast.success(`Generated PDF report with ${filteredBrands.length} brands.`)
+            // Footer
+            const pageCount = doc.internal.getNumberOfPages()
+            doc.setFontSize(8)
+            doc.setTextColor(150)
+            for (let i = 1; i <= pageCount; i++) {
+                doc.setPage(i)
+                doc.text(
+                    `Page ${i} of ${pageCount}`,
+                    doc.internal.pageSize.getWidth() / 2,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'center' }
+                )
+            }
+
+            // PDF  download
+            const fileName = `brands_report_${new Date().toISOString().split('T')[0]}.pdf`
+            doc.save(fileName)
+
+            toast.success(`PDF generated! ${filteredBrands.length} brands included.`)
         } catch (error) {
-            toast.error("Failed to generate PDF report.")
+            console.error('PDF generation error:', error)
+            toast.error(`Failed to generate PDF: ${error.message}`)
         }
     }
+
 
     // Handle Excel file import
     const handleFileUpload = (event) => {
@@ -181,21 +224,14 @@ export default function ListBrand() {
                     is_active: item['Status']?.toLowerCase() === 'active',
                     created_date: new Date().toISOString().split('T')[0]
                 }))
-                axios.post('/brands/import', { brands: newBrands })
-                    .then(response => {
-                        setBrands(prev => [...prev, ...newBrands])
-                        setImportDialog(false)
-                        toast.success(`Successfully imported ${newBrands.length} brands.`)
-                    })
-                    .catch ((error)=> {
-                        const message = error.response?.data?.message || "Failed to save imported brands to server.";
-                        toast.error(message);
-                    })
-
+                setBrands(prev => [...prev, ...newBrands])
+                setImportDialog(false)
+                toast.success(`Successfully imported ${newBrands.length} brands.`)
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
         }
+
         reader.readAsArrayBuffer(file)
     }
 
@@ -316,25 +352,28 @@ export default function ListBrand() {
                                 <TableHead>Brand ID</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Email</TableHead>
+                                <TableHead>Web Site</TableHead>
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Created Date</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
+
                         <TableBody>
                             {filteredBrands.map((brand) => (
                                 <TableRow key={brand.id || brand.brand_id}>
                                     <TableCell>
-                                        <div className="flex items-center gap-3">
-                                            <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
-                                                <Building2 className="h-5 w-5" />
+                                        <div className="font-medium">
+                                            <div className="h-5 w-5 text-muted-foreground"/>
+                                            <span>{brand.brand_name}</span>
                                             </div>
-                                            <div className="font-medium">{brand.brand_name}</div>
-                                        </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-sm">{brand.brand_id || '-'}</TableCell>
+                                    <TableCell className="font-mono text-sm">
+                                        {brand.brand_id || '-'}
+                                    </TableCell>
                                     <TableCell>{brand.contact_person || '-'}</TableCell>
                                     <TableCell>{brand.email || '-'}</TableCell>
+                                    <TableCell>{brand.website || '-'}</TableCell>
                                     <TableCell>{brand.phone || '-'}</TableCell>
                                     <TableCell>{brand.created_date || '-'}</TableCell>
                                     <TableCell className="text-right">
