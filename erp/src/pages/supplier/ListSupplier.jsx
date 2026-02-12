@@ -44,7 +44,9 @@ import {
     Building2,
     Download,
     FileText,
-    Upload
+    Upload,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react'
 import axios from 'axios'
 
@@ -84,12 +86,19 @@ export default function ListSupplier() {
     const fileInputRef = useRef(null)
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
     const filteredSuppliers = suppliers.filter(sup =>
         (sup.supplier_name ? sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (sup.supplier_id ? String(sup.supplier_id).toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (sup.contact_person ? sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (sup.email ? sup.email.toLowerCase().includes(searchTerm.toLowerCase()) : false)
     );
+
+    const totalItems = filteredSuppliers.length
+    const totalPages = Math.ceil(totalItems / rowsPerPage)
+    const startIndex = (currentPage - 1) * rowsPerPage
+    const currentSuppliers = filteredSuppliers.slice(startIndex, startIndex + rowsPerPage)
 
     useEffect(() => {
         fetchSuppliers()
@@ -315,9 +324,36 @@ export default function ListSupplier() {
 
             {/* Table */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Suppliers</CardTitle>
-                    <CardDescription>{filteredSuppliers.length} suppliers found</CardDescription>
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <CardTitle>Suppliers</CardTitle>
+                            <CardDescription>
+                                {totalItems > 0
+                                    ? `Showing ${startIndex + 1}–${Math.min(startIndex + rowsPerPage, totalItems)} of ${totalItems}`
+                                    : 'No suppliers found'}
+                            </CardDescription>
+                        </div>
+
+                        {totalItems > 0 && (
+                            <div className="flex items-center gap-3">
+                                <span className="text-sm text-muted-foreground">Rows per page:</span>
+                                <select
+                                    value={rowsPerPage}
+                                    onChange={(e) => {
+                                        setRowsPerPage(Number(e.target.value))
+                                        setCurrentPage(1)
+                                    }}
+                                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </CardHeader>
 
                 <CardContent>
@@ -336,7 +372,7 @@ export default function ListSupplier() {
                         </TableHeader>
 
                         <TableBody>
-                            {filteredSuppliers.map((supplier) => (
+                            {currentSuppliers.map((supplier) => (
                                 <TableRow key={supplier.supplier_id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
@@ -383,6 +419,43 @@ export default function ListSupplier() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                {totalItems > 0 && totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Previous
+                        </Button>
+
+                        <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <Button
+                                    key={page}
+                                    variant={page === currentPage ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </Button>
+                            ))}
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                )}
             </Card>
 
             {/* Delete Dialog */}
