@@ -2,6 +2,7 @@ import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/s
 import { AppSidebar } from "@/components/AppSidebar"
 import { useEffect, useState } from "react"
 import { Outlet } from "react-router-dom"
+import HotKeys from "@/pages/hotkeys/HotKeys.jsx";
 
 export function DashboardLayout() {
   const [defaultOpen, setDefaultOpen] = useState(true)
@@ -29,6 +30,7 @@ export function DashboardLayout() {
             <h1 className="text-lg font-semibold">Dashboard</h1>
           </div>
         </header>
+          <HotKeys />
         <main className="flex flex-1 flex-col gap-4 p-4">
           <Outlet />
         </main>

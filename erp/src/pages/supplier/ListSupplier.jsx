@@ -192,9 +192,14 @@ export default function ListSupplier() {
 
                 axios.post('/suppliers/import', { suppliers: newSuppliers })
                     .then(response => {
-                        setSuppliers(prev => [...prev, ...newSuppliers])
-                        setImportDialog(false)
-                        toast.success(`Successfully imported ${newSuppliers.length} suppliers.`)
+                        const { imported, skipped } = response.data;
+                        fetchSuppliers();
+                        setImportDialog(false);
+                        if (skipped > 0) {
+                            toast.info(`Imported ${imported} • ${skipped} skipped (duplicates)`);
+                        } else {
+                            toast.success(`Imported ${imported} suppliers`);
+                        }
                     })
                     .catch((error) => {
                         const message = error.response?.data?.message || "Failed to save imported suppliers to server.";
