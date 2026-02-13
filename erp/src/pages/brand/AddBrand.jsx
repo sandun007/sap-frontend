@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
 import axios from 'axios'
+
 export default function AddBrand() {
     // function format date as YYYY-MM-DD
     const formatDate = (date) => {

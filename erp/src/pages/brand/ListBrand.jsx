@@ -100,7 +100,6 @@ export default function ListBrand() {
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredBrands.map(b => ({
-                'Brand ID': b.brand_id || '',
                 'Brand Name': b.brand_name || '',
                 'Contact Person': b.contact_person || '',
                 'Phone': b.phone || '',
@@ -214,8 +213,7 @@ export default function ListBrand() {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
                 const newBrands = jsonData.map((item, index) => ({
-                    id: Math.max(...brands.map(b => b.id), 0) + index + 1,
-                    brand_id: item['Brand ID'] || generateBrandId(),
+                    brand_id:  generateBrandId(),
                     brand_name: item['Brand Name'] || `Imported Brand ${index + 1}`,
                     contact_person: item['Contact Person'] || '',
                     phone: item['Phone'] || '',
@@ -224,9 +222,23 @@ export default function ListBrand() {
                     is_active: item['Status']?.toLowerCase() === 'active',
                     created_date: new Date().toISOString().split('T')[0]
                 }))
-                setBrands(prev => [...prev, ...newBrands])
-                setImportDialog(false)
-                toast.success(`Successfully imported ${newBrands.length} brands.`)
+
+                axios.post('http://127.0.0.1:8000/api/brands/import', { brands: newBrands })
+                    .then(response => {
+                        const { imported, skipped } = response.data;
+                        fetchBrands();
+                        setImportDialog(false);
+                        if (skipped > 0) {
+                            toast.info(`Imported ${imported} • ${skipped} skipped (duplicates)`);
+                        } else {
+                            toast.success(`Imported ${imported} brands`);
+                        }
+                    })
+                    .catch((error) => {
+                        const message = error.response?.data?.message || "Failed to save imported brands to server.";
+                        toast.error(message);
+                    })
+
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
@@ -239,7 +251,7 @@ export default function ListBrand() {
     // Download import template
     const downloadTemplate = () => {
         const templateData = [{
-            'Brand ID': 'BRAND-XXXXXX-XXXX',
+            'Brand ID': '',
             'Brand Name': 'Sample Brand',
             'Contact Person': 'John Doe',
             'Phone': '+94 XX XXX XXXX',
