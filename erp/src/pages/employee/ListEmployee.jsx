@@ -119,23 +119,14 @@ export default function ListEmployee() {
             });
 
             if (response.data.success) {
-                const updatedDept = allDepartments.find(d => String(d.department_id) === String(editForm.department_id))
-                const updatedEmployee = response.data.data || {
-                    ...editForm,
-                    department: updatedDept ? { ...updatedDept } : editForm.department
-                }
-
-                setEmployees(prev => prev.map(emp =>
-                    emp.employee_id === editForm.employee_id ? { ...emp, ...updatedEmployee } : emp
-                ))
-                
+                toast.success("Employee information has been updated successfully.")
                 setEditDialog({ open: false, employee: null })
                 setEditForm({})
                 setEditNicFrontPreview(null)
                 setEditNicBackPreview(null)
                 setEditNicFrontFile(null)
                 setEditNicBackFile(null)
-                toast.success("Employee information has been updated successfully.")
+                fetchEmployees()
             }
         } catch (error) {
             console.error('Failed to update employee:', error)
@@ -311,7 +302,7 @@ export default function ListEmployee() {
                         </TableHeader>
                         <TableBody>
                             {filteredEmployees.map((emp) => (
-                                <TableRow key={emp.id}>
+                                <TableRow key={emp.employee_id}>
                                     <TableCell className="font-mono text-sm">{emp.employee_code}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">

@@ -116,7 +116,15 @@ const menuItems = [
     title: "Data Capture",
     items: [
       { title: "Sales", url: "/sales", icon: ShoppingCart },
-      { title: "Purchases", url: "/purchases", icon: ShoppingCart },
+      { 
+        title: "Purchases", 
+        url: "/purchases", 
+        icon: ShoppingCart,
+        subItems: [
+          { title: "Add Purchase", url: "/purchases/add", icon: Plus },
+          { title: "Purchase List", url: "/purchases/list", icon: List },
+        ]
+      },
       { title: "Returns", url: "/returns", icon: RotateCcw },
     ]
   },

@@ -45,7 +45,7 @@ import { toast } from "sonner"
 import axios from "axios"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 import {
   Plus,
   Search,
@@ -134,13 +134,9 @@ export default function ListDepartment() {
     try {
       const response = await axios.put(`/departments/${editForm.department_id}`, editForm)
       if (response.data.success) {
-        setDepartments(
-          departments.map((d) =>
-            d.department_id === editForm.department_id ? { ...d, ...editForm } : d
-          )
-        )
-        setEditDialog({ open: false, dept: null })
         toast.success("Department updated successfully")
+        setEditDialog({ open: false, dept: null })
+        fetchDepartments()
       }
     } catch (error) {
       console.error('Failed to update department:', error)
@@ -151,11 +147,10 @@ export default function ListDepartment() {
   /* ---------------- EXPORT ---------------- */
   const exportToExcel = () => {
     const dataForExport = filteredDepartments.map(d => ({
-      'Department Name': d.department_name,
-      'Code': d.department_code || d.department_id,
+      'Department Code': d.department_code || "-",
+      'Department Name': d.department_name || "-",
       'Branch': d.branch?.branch_name || "-",
       'Manager': d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
-      'Status': d.is_active ? "Active" : "Inactive"
     }))
     const worksheet = XLSX.utils.json_to_sheet(dataForExport)
     const workbook = XLSX.utils.book_new()
@@ -168,15 +163,14 @@ export default function ListDepartment() {
     const doc = new jsPDF()
     doc.text("Department List", 14, 20)
 
-    doc.autoTable({
+    autoTable(doc, {
       startY: 30,
-      head: [["Department Name", "Code", "Branch", "Manager", "Status"]],
+      head: [["Department Code", "Department Name", "Branch", "Manager"]],
       body: filteredDepartments.map((d) => [
-        d.department_name,
-        d.department_code || d.department_id,
+        d.department_code || "-",
+        d.department_name || "-",
         d.branch?.branch_name || "-",
         d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
-        d.is_active ? "Active" : "Inactive",
       ]),
     })
 
@@ -249,7 +243,7 @@ export default function ListDepartment() {
             </TableHeader>
             <TableBody>
               {filteredDepartments.map((dept) => (
-                <TableRow key={dept.id}>
+                <TableRow key={dept.department_id}>
                     <TableCell className="font-mono text-sm text-muted-foreground">
                         {dept.department_code || "-"}
                     </TableCell>

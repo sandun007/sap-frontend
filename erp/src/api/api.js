@@ -115,6 +115,16 @@ export const authAPI = {
     refreshToken: () => api.post('/refresh')
 };
 
+// Purchase/GRN API
+export const purchaseAPI = {
+    getAll: () => api.get('/purchases'),
+    getById: (id) => api.get(`/purchases/${id}`),
+    create: (data) => api.post('/purchases', data),
+    update: (id, data) => api.put(`/purchases/${id}`, data),
+    delete: (id) => api.delete(`/purchases/${id}`),
+    search: (params) => api.get('/purchases/search', { params })
+};
+
 // Dashboard
 export const dashboardAPI = {
     getStats: () => api.get('/dashboard/stats'),

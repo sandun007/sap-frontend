@@ -6,16 +6,23 @@ export const useAuth = () => useContext(AuthContext);
 
 axios.defaults.baseURL = 'http://127.0.0.1:8000/api';
 
+const initialToken = localStorage.getItem('token');
+if (initialToken) {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${initialToken}`;
+}
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [token, setToken] = useState(localStorage.getItem('token'));
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [token, setToken] = useState(initialToken);
+    const [isAuthenticated, setIsAuthenticated] = useState(!!initialToken);
 
     useEffect(() => {
         if (token) {
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // fetchUser();
             setIsAuthenticated(true);
+        } else {
+            delete axios.defaults.headers.common['Authorization'];
+            setIsAuthenticated(false);
         }
     }, [token]);
 

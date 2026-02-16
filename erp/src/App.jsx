@@ -26,6 +26,9 @@ import AddEmployee from "@/pages/employee/AddEmployee.jsx";
 import ListEmployee from "@/pages/employee/ListEmployee.jsx";
 import AddSubCategory from "@/pages/subcategory/AddSubCategory.jsx";
 import ListSubCategories from "@/pages/subcategory/ListSubCategory.jsx";
+import AddPurchase from "./pages/purchase/AddPurchase";
+import ListPurchase from "./pages/purchase/ListPurchase";
+
 
 
 function App() {
@@ -79,6 +82,11 @@ function App() {
                     {/*employee*/}
                     <Route path="/employee/add/*" element={<AddEmployee/>} />
                     <Route path="/employee/list/*" element={<ListEmployee/>} />
+
+                    {/* purchase */}
+                    <Route path="/purchases/add/*" element={<AddPurchase/>} />
+                    <Route path="/purchases/list/*" element={<ListPurchase/>} />
+
 
                 </Route>
                 <Route path="/login" element={<Login/>}/>

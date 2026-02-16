@@ -18,7 +18,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronDown, LogOut, Home, User, ChevronRight } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 
 const navGroups = [
     {
@@ -99,7 +99,13 @@ const navGroups = [
                     { title: "Customer Returns", url: "/#" }
                 ],
             },
-            { title: "Purchases", url: "/purchases" },
+            {
+                title: "Purchases",
+                subItems: [
+                    { title: "Add Purchase", url: "/purchases/add" },
+                    { title: "Purchase List", url: "/purchases/list" },
+                ],
+            },
         ],
     },
     {
@@ -242,6 +248,7 @@ function MobileNav() {
                 side="left"
                 className="w-[85vw] max-w-sm p-0 flex flex-col bg-slate-500 text-gray-100 border-r border-slate-700"
             >
+                <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
                 {/* Fixed header */}
                 <div className="border-b border-slate-700 px-5 py-4 shrink-0 bg-slate-800/40">
                     <Link

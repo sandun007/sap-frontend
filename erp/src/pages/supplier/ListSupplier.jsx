@@ -33,7 +33,7 @@ import {
 } from "@/components/ui/table"
 
 import { toast } from 'sonner'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 
 import {
     Plus,
@@ -159,7 +159,7 @@ export default function ListSupplier() {
                 sup.payment_terms || '-'
             ])
 
-            doc.autoTable({
+            autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,

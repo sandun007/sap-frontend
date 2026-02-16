@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { ScanBarcode, Upload, Camera, Package, Save, X, QrCode } from 'lucide-react'
-import axios from 'axios'
+import api from '@/api/api'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import QRCode from 'react-qr-code'
@@ -65,11 +65,11 @@ export default function AddProduct() {
   const fetchInitialData = async () => {
     try {
       const [catRes, subRes, brandRes, supRes, branchRes] = await Promise.all([
-        axios.get('/categories'),
-        axios.get('/subcategories'),
-        axios.get('/brands'),
-        axios.get('/suppliers'),
-        axios.get('/branches')
+        api.get('/categories'),
+        api.get('/subcategories'),
+        api.get('/brands'),
+        api.get('/suppliers'),
+        api.get('/branches')
       ])
       setCategories(catRes.data.data || [])
       setSubcategories(subRes.data.data || [])
@@ -201,7 +201,7 @@ export default function AddProduct() {
         supplier_id: formData.supplier_id
       }
 
-      const response = await axios.post('/products', payload)
+      const response = await api.post('/products', payload)
       
       if (response.data.success) {
         const newProduct = response.data.data
@@ -209,7 +209,7 @@ export default function AddProduct() {
         // If initial stock is specified and branch is selected, create stock entry
         if (formData.branch_id && formData.initial_stock) {
           try {
-            await axios.post('/stocks', {
+            await api.post('/stocks', {
               product_id: newProduct.product_id,
               branch_id: parseInt(formData.branch_id),
               brand_id: parseInt(formData.brand_id),

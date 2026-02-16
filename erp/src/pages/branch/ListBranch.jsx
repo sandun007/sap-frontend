@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import {
     Plus,
     Search,
@@ -86,17 +87,14 @@ export default function ListBranch() {
         }
     }
 
-    // Update branch
     const handleUpdate = async () => {
         try {
             const response = await axios.put(`/branches/${editForm.branch_id}`, editForm)
             if (response.data.success) {
-                setBranches(branches.map(b =>
-                    b.branch_id === editForm.branch_id ? { ...b, ...editForm } : b
-                ))
+                toast.success("Branch information has been updated successfully.")
                 setEditDialog({ open: false, branch: null })
                 setEditForm({})
-                toast.success("Branch information has been updated successfully.")
+                fetchData()
             }
         } catch (error) {
             console.error('Failed to update branch:', error)
@@ -156,7 +154,7 @@ export default function ListBranch() {
                 b.is_active ? 'Active' : 'Inactive'
             ])
 
-            doc.autoTable({
+            autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,
@@ -456,12 +454,22 @@ export default function ListBranch() {
                             </div>
                         </div>
                         <div className="space-y-2">
-                            <Label htmlFor="edit-manager-id">Manager ID</Label>
-                            <Input
-                                id="edit-manager-id"
-                                value={editForm.manager_id || ''}
-                                onChange={(e) => setEditForm({ ...editForm, manager_id: e.target.value })}
-                            />
+                            <Label htmlFor="edit-manager-id">Manager</Label>
+                            <Select 
+                                value={editForm.manager_id?.toString() || ""} 
+                                onValueChange={(value) => setEditForm({ ...editForm, manager_id: value })}
+                            >
+                                <SelectTrigger id="edit-manager" className="w-full">
+                                    <SelectValue placeholder="Select manager" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {employees.map((emp) => (
+                                        <SelectItem key={emp.employee_id} value={emp.employee_id.toString()}>
+                                            {emp.first_name} {emp.last_name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="edit-opening-date">Opening Date</Label>

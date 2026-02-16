@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
-import {jsPDF} from 'jspdf'
+import { jsPDF } from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import {
     Plus,
@@ -22,53 +22,22 @@ import {
     Upload,
     FileText,
     Building2,
-    Package
+    Package,
+    AlertCircle,
+    CheckCircle2
 } from 'lucide-react'
-import axios from 'axios'
+import api from '@/api/api'
 
-// Temporary data
-const initialBrands = [
-    {
-        id: 1,
-        brand_id: "BRAND-890123-AB4X",
-        brand_name: "Apple",
-        contact_person: "Tharindu Fernando",
-        phone: "+94 77 123 4567",
-        email: "contact@apple.com",
-        website: "https://www.apple.com",
-        is_active: true,
-        created_date: "2024-01-05"
-    },
-    {
-        id: 2,
-        brand_id: "BRAND-890124-CD5Y",
-        brand_name: "Samsung",
-        contact_person: "Sachini Jayawardena",
-        phone: "+94 71 987 6543",
-        email: "support@samsung.com",
-        website: "https://www.samsung.com",
-        is_active: false,
-        created_date: "2024-01-10"
-    },
-    {
-        id: 3,
-        brand_id: "BRAND-890125-EF6Z",
-        brand_name: "Nike",
-        contact_person: "Ishan Jayasinghe",
-        phone: "+94 76 555 8888",
-        email: "info@nike.com",
-        website: "https://www.nike.com",
-        is_active: true,
-        created_date: "2024-02-15"
-    }
-]
-
+// ListBrand Component
 export default function ListBrand() {
-    const [brands, setBrands] = useState(initialBrands)
+    const [brands, setBrands] = useState([])
     const [searchTerm, setSearchTerm] = useState('')
     const [deleteDialog, setDeleteDialog] = useState({ open: false, brand: null })
     const [editDialog, setEditDialog] = useState({ open: false, brand: null })
     const [importDialog, setImportDialog] = useState(false)
+    const [importProgress, setImportProgress] = useState(null)
+    const [importResult, setImportResult] = useState(null)
+    const [importReview, setImportReview] = useState(null)
     const [editForm, setEditForm] = useState({})
     const fileInputRef = useRef(null)
     const [loading, setLoading] = useState(true)
@@ -85,35 +54,39 @@ export default function ListBrand() {
     }, [])
 
     const fetchBrands = async () => {
-        setLoading(true)
-        const response = await axios.get('/brands')
-        setBrands(response.data.data || [])
-        toast.success('Brands loaded')
+        try {
+            setLoading(true)
+            const response = await api.get('/brands')
+            setBrands(response.data.data || [])
+        } catch (err) {
+            console.error('Fetch brands error:', err)
+            toast.error('Failed to load brands')
+        } finally {
+            setLoading(false)
+        }
     }
 //generate id
     function generateBrandId() {
         const timestamp = Date.now().toString().slice(-6)
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
-        return `BRAND-${timestamp}-${random}`
+        return `BR-${timestamp}-${random}`
     }
 //Export to Excel
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredBrands.map(b => ({
-                'Brand ID': b.brand_id || '',
+                'Brand Code': b.brand_code || '',
                 'Brand Name': b.brand_name || '',
                 'Contact Person': b.contact_person || '',
                 'Phone': b.phone || '',
                 'Email': b.email || '',
-                'Website': b.website || '',
-                'Status': b.is_active ? 'Active' : 'Inactive',
-                'Created Date': b.created_date || ''
+                'Website': b.website || ''
             })))
 
             const workbook = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(workbook, worksheet, 'Brands')
             XLSX.writeFile(workbook, `brands_export_${new Date().toISOString().split('T')[0]}.xlsx`)
-            toast.success(`Exported ${filteredBrands.length} brands to Excel.`)
+            toast.success("Brands exported!")
         } catch (error) {
             console.error(error)
             toast.error("Failed to export brands to Excel.")
@@ -135,14 +108,14 @@ export default function ListBrand() {
             doc.setTextColor(100)
             doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
             doc.text(`Total Brands: ${filteredBrands.length}`, 14, 37)
-            const tableColumn = ['Brand ID', 'Brand Name', 'Contact', 'Email', 'Phone', 'Status']
+            const tableColumn = ['Brand Code', 'Brand Name', 'Contact', 'Email', 'Phone', 'Website']
             const tableRows = filteredBrands.map(brand => [
-                brand.brand_id || '-',
+                brand.brand_code || '-',
                 brand.brand_name || '-',
                 brand.contact_person || '-',
                 brand.email || '-',
                 brand.phone || '-',
-                brand.is_active ? 'Active' : 'Inactive'
+                brand.website || '-',
             ])
 
             autoTable(doc, {
@@ -161,12 +134,12 @@ export default function ListBrand() {
                     halign: 'center'
                 },
                 columnStyles: {
-                    0: { cellWidth: 30 }, // Brand ID
-                    1: { cellWidth: 35 }, // Brand Name
-                    2: { cellWidth: 30 }, // Contact
-                    3: { cellWidth: 45 }, // Email
-                    4: { cellWidth: 25 }, // Phone
-                    5: { cellWidth: 20, halign: 'center' }  // Status
+                    0: { cellWidth: 30 },
+                    1: { cellWidth: 35 },
+                    2: { cellWidth: 30 },
+                    3: { cellWidth: 45 },
+                    4: { cellWidth: 25 },
+                    5: { cellWidth: 20, halign: 'center' }
                 },
                 alternateRowStyles: {
                     fillColor: [245, 245, 245]
@@ -174,7 +147,6 @@ export default function ListBrand() {
                 margin: { top: 10 }
             })
 
-            // Footer
             const pageCount = doc.internal.getNumberOfPages()
             doc.setFontSize(8)
             doc.setTextColor(150)
@@ -188,7 +160,6 @@ export default function ListBrand() {
                 )
             }
 
-            // PDF  download
             const fileName = `brands_report_${new Date().toISOString().split('T')[0]}.pdf`
             doc.save(fileName)
 
@@ -202,81 +173,191 @@ export default function ListBrand() {
 
     // Handle Excel file import
     const handleFileUpload = (event) => {
-        const file = event.target.files[0]
+        const file = event.target.files?.[0]
         if (!file) return
 
         const reader = new FileReader()
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const data = new Uint8Array(e.target.result)
                 const workbook = XLSX.read(data, { type: 'array' })
                 const worksheet = workbook.Sheets[workbook.SheetNames[0]]
                 const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
-                const newBrands = jsonData.map((item, index) => ({
-                    brand_id: generateBrandId(),
-                    brand_name: item['Brand Name'] || `Imported Brand ${index + 1}`,
-                    contact_person: item['Contact Person'] || '',
-                    phone: item['Phone'] || '',
-                    email: item['Email'] || '',
-                    website: item['Website'] || '',
-                    is_active: item['Status']?.toLowerCase() === 'active',
-                    created_date: new Date().toISOString().split('T')[0]
-                }))
-                setBrands(prev => [...prev, ...newBrands])
+                const allRows = jsonData.map((item, index) => {
+                    const rowNum = index + 2
+                    const brandName = (item['Brand Name'] || '').trim()
+                    
+                    const existing = brands.find(b => 
+                        (b.brand_name || '').toLowerCase() === brandName.toLowerCase()
+                    )
+
+                    const payload = {
+                        brand_name: brandName,
+                        brand_code: existing?.brand_code || generateBrandId(),
+                        contact_person: item['Contact Person'] || '',
+                        phone: item['Phone'] || '',
+                        email: item['Email'] || '',
+                        website: item['Website'] || ''
+                    }
+
+                    const columnErrors = []
+                    if (!brandName) columnErrors.push({ column: 'Brand Name', reason: 'Name is required' })
+
+                    const changes = []
+                    if (existing) {
+                        const checkDiff = (label, key, newVal, oldVal) => {
+                            if (newVal !== undefined && newVal !== null && String(newVal).trim() !== String(oldVal || '').trim()) {
+                                changes.push({ label, key, newVal, oldVal: oldVal || '(empty)', confirmed: false })
+                            }
+                        }
+                        checkDiff('Brand Name', 'brand_name', payload.brand_name, existing.brand_name)
+                        checkDiff('Contact Person', 'contact_person', payload.contact_person, existing.contact_person)
+                        checkDiff('Phone', 'phone', payload.phone, existing.phone)
+                        checkDiff('Email', 'email', payload.email, existing.email)
+                        checkDiff('Website', 'website', payload.website, existing.website)
+                    }
+
+                    return { rowNum, brandName, payload, existing, columnErrors, changes }
+                })
+
+                const toReview = allRows.filter(r => r.existing || r.columnErrors.length > 0)
+                const toAuto = allRows.filter(r => !r.existing && r.columnErrors.length === 0)
+
                 setImportDialog(false)
-                toast.success(`Successfully imported ${newBrands.length} brands.`)
+
+                let successCount = 0
+                let errors = []
+
+                if (toAuto.length > 0) {
+                    setImportProgress({ current: 0, total: toAuto.length, errors: [] })
+                    for (let i = 0; i < toAuto.length; i++) {
+                        const row = toAuto[i]
+                        try {
+                            await api.post('/brands', row.payload)
+                            successCount++
+                        } catch (err) {
+                            const responseData = err.response?.data
+                            let msg = responseData?.message || err.message
+                            if (responseData?.errors) {
+                                msg = Object.entries(responseData.errors)
+                                    .map(([f, ms]) => `${f}: ${Array.isArray(ms) ? ms.join(', ') : ms}`)
+                                    .join(' | ')
+                            }
+                            errors.push({ row: row.rowNum, name: row.brandName, message: msg })
+                        }
+                        setImportProgress(prev => ({ ...prev, current: i + 1, errors: [...errors] }))
+                    }
+                }
+
+                if (toReview.length > 0) {
+                    setImportReview({
+                        rows: toReview,
+                        currentIndex: 0,
+                        processing: false,
+                        successCount,
+                        errors
+                    })
+                } else {
+                    finishImport(successCount, errors)
+                }
             } catch (error) {
-                toast.error("Failed to process the Excel file. Please check the format.")
+                toast.error('Failed to read Excel file.')
+                console.error(error)
             }
         }
-
         reader.readAsArrayBuffer(file)
     }
 
+    const processImportRow = async (rowIndex, shouldSkip = false) => {
+        setImportReview(prev => ({ ...prev, processing: true }))
+        const row = importReview.rows[rowIndex]
+        let currentSuccess = importReview.successCount
+        let currentErrors = [...importReview.errors]
 
-    // Download import template
+        if (shouldSkip) {
+            moveToNextRow(currentSuccess, currentErrors)
+            return
+        }
+
+        try {
+            if (row.existing) {
+                const confirmedPayload = {}
+                row.changes.forEach(c => {
+                    if (c.confirmed) confirmedPayload[c.key] = c.newVal
+                })
+                if (Object.keys(confirmedPayload).length > 0) {
+                    await api.put(`/brands/${row.existing.brand_id}`, confirmedPayload)
+                }
+            } else {
+                await api.post('/brands', row.payload)
+            }
+            currentSuccess++
+        } catch (err) {
+            const msg = err.response?.data?.message || err.message
+            currentErrors.push({ row: row.rowNum, name: row.brandName, message: msg })
+        }
+        moveToNextRow(currentSuccess, currentErrors)
+    }
+
+    const moveToNextRow = (success, errors) => {
+        const isLast = importReview.currentIndex === importReview.rows.length - 1
+        if (isLast) {
+            finishImport(success, errors)
+        } else {
+            setImportReview(prev => ({
+                ...prev,
+                currentIndex: prev.currentIndex + 1,
+                processing: false,
+                successCount: success,
+                errors: errors
+            }))
+        }
+    }
+
+    const finishImport = async (success, errors) => {
+        setImportProgress(null)
+        setImportReview(null)
+        await fetchBrands()
+        setImportResult({ successCount: success, errors })
+    }
+
     const downloadTemplate = () => {
         const templateData = [{
-            'Brand ID': 'BRAND-XXXXXX-XXXX',
-            'Brand Name': 'Sample Brand',
+            'Brand Name': 'Apple',
             'Contact Person': 'John Doe',
-            'Phone': '+94 XX XXX XXXX',
-            'Email': 'contact@brand.com',
-            'Website': 'https://www.brand.com',
-            'Status': 'Active'
+            'Phone': '+94 11 234 5678',
+            'Email': 'contact@apple.com',
+            'Website': 'https://www.apple.com'
         }]
-
         const worksheet = XLSX.utils.json_to_sheet(templateData)
         const workbook = XLSX.utils.book_new()
         XLSX.utils.book_append_sheet(workbook, worksheet, 'Template')
         XLSX.writeFile(workbook, 'brand_import_template.xlsx')
-
-        toast.success("Brand import template downloaded successfully.")
+        toast.success("Template downloaded")
     }
 
     //DELETE
     const handleDelete = async (brandId) => {
         try {
-            await axios.delete(`/brands/${brandId}`);
-            toast.success('Brand deleted successfully');
+            await api.delete(`/brands/${brandId}`);
+            toast.success('Brand deleted');
             setDeleteDialog({ open: false, brand: null });
             fetchBrands();
         } catch (error) {
-            toast.error('Failed to delete brand: ' + (error.response?.data?.message || error.message))
+            toast.error('Delete failed')
         }
     }
 
     //UPDATE
     const handleUpdate = async () => {
         try {
-            await axios.put(`/brands/${editForm.brand_id}`, editForm);
+            await api.put(`/brands/${editForm.brand_id}`, editForm);
             toast.success('Brand updated successfully');
             setEditDialog({ open: false, brand: null });
-            setEditForm({});
             fetchBrands();
         } catch (error) {
-            toast.error('Failed to update brand: ' + (error.response?.data?.message || error.message))
+            toast.error('Failed to update brand')
         }
     }
 
@@ -292,6 +373,26 @@ export default function ListBrand() {
 
     return (
         <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-6">
+            {/* Import Progress Overlay */}
+            {importProgress && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl p-8 max-w-sm w-full text-center space-y-4">
+                        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto" />
+                        <h3 className="text-lg font-semibold text-foreground tracking-tight">Importing Brands…</h3>
+                        <div className="space-y-2">
+                            <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                                <div 
+                                    className="h-full bg-primary transition-all duration-300" 
+                                    style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                                />
+                            </div>
+                            <p className="text-sm text-muted-foreground font-medium">
+                                {importProgress.current} of {importProgress.total} processed
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
                 <div>
@@ -365,8 +466,11 @@ export default function ListBrand() {
                                         {brand.brand_code || '-'}
                                     </TableCell>
                                     <TableCell>
-                                        <div className="font-medium">
-                                            <span>{brand.brand_name}</span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
+                                                <Building2 className="h-5 w-5 text-muted-foreground" />
+                                            </div>
+                                            <span className="font-medium text-foreground">{brand.brand_name}</span>
                                         </div>
                                     </TableCell>
                                     <TableCell>{brand.contact_person || '-'}</TableCell>
@@ -435,25 +539,21 @@ export default function ListBrand() {
 
             {/* Edit Brand Dialog */}
             <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, brand: null })}>
-                <DialogContent className="sm:max-w-[540px]">
+                <DialogContent className="max-w-3xl">
                     <DialogHeader>
                         <DialogTitle>Edit Brand</DialogTitle>
                         <DialogDescription>
                             Update information for {editDialog.brand?.brand_name}
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-6 py-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-brand-id">Brand ID</Label>
-                                <Input
-                                    id="edit-brand-id"
-                                    value={editForm.brand_id || ''}
-                                    onChange={(e) => setEditForm({ ...editForm, brand_id: e.target.value })}
-                                />
+                                <Label>Brand Code</Label>
+                                <Input value={editForm.brand_code || ''} disabled className="bg-muted" />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-brand-name">Brand Name</Label>
+                                <Label htmlFor="edit-brand-name" className="font-bold">Brand Name *</Label>
                                 <Input
                                     id="edit-brand-name"
                                     value={editForm.brand_name || ''}
@@ -501,43 +601,33 @@ export default function ListBrand() {
                             </div>
                         </div>
 
-                        <div className="flex items-center justify-between pt-4">
-                            <Label htmlFor="edit-status">Active Status</Label>
-                            <Switch
-                                id="edit-status"
-                                checked={editForm.is_active ?? true}
-                                onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
-                            />
                         </div>
-                    </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setEditDialog({ open: false, brand: null })}>
                             Cancel
                         </Button>
-                        <Button onClick={handleUpdate}>
-                            Update Brand
-                        </Button>
+                        <Button onClick={handleUpdate}>Save Changes</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
 
-            {/* Import Dialog */}
+            {/* Import Select Dialog */}
             <Dialog open={importDialog} onOpenChange={setImportDialog}>
-                <DialogContent>
+                <DialogContent className="max-w-lg">
                     <DialogHeader>
-                        <DialogTitle>Import Brands</DialogTitle>
+                        <DialogTitle>Import Brands from Excel</DialogTitle>
                         <DialogDescription>
-                            Upload an Excel file to import brands. Download the template first to ensure proper formatting.
+                            Upload an .xlsx file. The file should have a <strong>Brand Name</strong> column.
                         </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4">
+                    <div className="space-y-4 max-h-[65vh] overflow-y-auto pr-1">
                         <div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                            className="border-2 border-dashed border-primary/40 rounded-xl p-8 text-center cursor-pointer hover:border-primary hover:bg-primary/5 transition-colors"
                             onClick={() => fileInputRef.current?.click()}
                         >
-                            <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-600">Click to upload Excel file</p>
-                            <p className="text-xs text-gray-500 mt-1">.xlsx, .xls files supported</p>
+                            <Upload className="mx-auto h-12 w-12 text-primary/40 mb-4" />
+                            <p className="font-semibold text-foreground uppercase tracking-tight">Click to upload or drag & drop</p>
+                            <p className="text-xs text-muted-foreground mt-1">Excel files only (.xlsx, .xls)</p>
                             <input
                                 ref={fileInputRef}
                                 type="file"
@@ -546,19 +636,144 @@ export default function ListBrand() {
                                 className="hidden"
                             />
                         </div>
-                        <div className="text-sm text-muted-foreground">
-                            <Button variant="link" onClick={downloadTemplate} className="p-0 h-auto">
-                                Download template file
-                            </Button>
+
+                        <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1 border">
+                            <p className="font-bold text-foreground">Required columns:</p>
+                            <p className="text-muted-foreground">• Brand Name</p>
+                            <p className="text-muted-foreground italic mt-2">Optional: Contact Person, Phone, Email, Website</p>
                         </div>
                     </div>
-                    <DialogFooter>
+                    <DialogFooter className="flex-col sm:flex-row gap-2">
+                        <Button variant="link" onClick={downloadTemplate} className="p-0 h-auto text-sm mr-auto font-medium">
+                            Download template
+                        </Button>
                         <Button variant="outline" onClick={() => setImportDialog(false)}>
                             Cancel
                         </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {/* Import Results Dialog */}
+            {importResult && (
+                <Dialog open={!!importResult} onOpenChange={() => setImportResult(null)}>
+                    <DialogContent className="max-w-2xl text-foreground">
+                        <DialogHeader>
+                            <DialogTitle>Import Results</DialogTitle>
+                            <DialogDescription>
+                                {importResult.successCount} succeeded, {importResult.errors.length} failed
+                            </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                            {importResult.successCount > 0 && (
+                                <div className="flex items-center gap-2 rounded-xl bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800 p-4 shadow-sm">
+                                    <CheckCircle2 className="h-5 w-5 text-green-600" />
+                                    <span className="text-sm font-bold text-green-700 dark:text-green-400">
+                                        {importResult.successCount} brands imported successfully
+                                    </span>
+                                </div>
+                            )}
+                            {importResult.errors.length > 0 && (
+                                <div className="space-y-4">
+                                    <p className="text-xs font-bold text-destructive flex items-center gap-2 uppercase tracking-widest">
+                                        <AlertCircle className="h-5 w-5 text-destructive" />
+                                        Failed rows ({importResult.errors.length})
+                                    </p>
+                                    <div className="space-y-2">
+                                        {importResult.errors.map((err, i) => (
+                                            <div key={i} className="rounded-xl border border-destructive/20 bg-destructive/5 overflow-hidden shadow-sm">
+                                                <div className="bg-destructive/10 px-3 py-1.5 border-b border-destructive/10">
+                                                    <p className="text-[11px] font-bold text-destructive">Row {err.row} — {err.name}</p>
+                                                </div>
+                                                <div className="p-3">
+                                                    <p className="text-xs text-muted-foreground leading-relaxed italic">{err.message}</p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                        <DialogFooter>
+                            <Button onClick={() => setImportResult(null)}>Close Results</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
+
+            {/* Import Review Dialog */}
+            {importReview && importReview.rows[importReview.currentIndex] && (
+                <Dialog open={!!importReview} onOpenChange={() => {
+                    if (!importReview.processing) setImportReview(null);
+                }}>
+                    <DialogContent className="max-w-xl">
+                        <DialogHeader>
+                            <DialogTitle>Review Import ({importReview.currentIndex + 1} / {importReview.rows.length})</DialogTitle>
+                            <DialogDescription>
+                                Row {importReview.rows[importReview.currentIndex].rowNum}: <strong>{importReview.rows[importReview.currentIndex].brandName}</strong>
+                            </DialogDescription>
+                        </DialogHeader>
+
+                        <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto pr-1 text-foreground">
+                            <div className="rounded-xl border bg-amber-50/30 border-amber-200 p-4 shadow-sm">
+                                <div className="flex items-center gap-3 mb-4">
+                                    <div className="h-10 w-10 rounded-full bg-amber-100 flex items-center justify-center">
+                                        <AlertCircle className="h-5 w-5 text-amber-600" />
+                                    </div>
+                                    <div>
+                                        <h4 className="text-sm font-bold text-amber-900 uppercase tracking-tight">Duplicate Detected</h4>
+                                        <p className="text-xs text-amber-700 font-medium">This brand name already exists. Choose fields to update:</p>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-3">
+                                    {importReview.rows[importReview.currentIndex].changes.map((change, idx) => (
+                                        <div key={idx} className="flex items-center justify-between p-3 rounded-xl bg-white border border-amber-100 shadow-sm transition-all hover:border-amber-200">
+                                            <div className="space-y-1">
+                                                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{change.label}</p>
+                                                <div className="flex items-center gap-2 text-[11px]">
+                                                    <span className="text-muted-foreground line-through opacity-40 truncate max-w-[120px]">{change.oldVal}</span>
+                                                    <span className="text-primary font-bold">→</span>
+                                                    <span className="font-bold text-blue-600 truncate max-w-[150px]">{change.newVal}</span>
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                {change.confirmed && <Badge className="bg-primary hover:bg-primary text-[9px] h-4">CONFIRMED</Badge>}
+                                                <Switch 
+                                                    checked={change.confirmed}
+                                                    onCheckedChange={(val) => {
+                                                        const newRows = [...importReview.rows];
+                                                        newRows[importReview.currentIndex].changes[idx].confirmed = val;
+                                                        setImportReview(prev => ({ ...prev, rows: newRows }));
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <DialogFooter className="gap-2">
+                            <Button 
+                                variant="ghost" 
+                                onClick={() => processImportRow(importReview.currentIndex, true)}
+                                disabled={importReview.processing}
+                                className="text-xs"
+                            >
+                                Skip Brand
+                            </Button>
+                            <Button 
+                                onClick={() => processImportRow(importReview.currentIndex)}
+                                disabled={importReview.processing}
+                                className="min-w-[130px] font-bold"
+                            >
+                                {importReview.processing ? "Processing..." : "Confirm Update"}
+                            </Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+            )}
         </div>
     )
 }

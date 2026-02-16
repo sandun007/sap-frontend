@@ -9,6 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -43,8 +44,7 @@ import {
     Trash2,
     Download,
 } from 'lucide-react';
-import {SelectContent, SelectItem, SelectTrigger, SelectValue} from "@radix-ui/react-select";
-import {Label, Select} from "radix-ui";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import axios from 'axios';
 
 export default function ListSubCategories() {
@@ -125,8 +125,8 @@ export default function ListSubCategories() {
         try {
             const worksheet = XLSX.utils.json_to_sheet(
                 filteredSubcategories.map(sub => ({
-                    'Subcategory Name': sub.subcategory_name || '',
-                    'Code': sub.subcategory_code || '',
+                    'Subcategory Name': sub.subcategory_code || '',
+                    'Code': sub.subcategory_name || '',
                     'Parent Category': sub.category?.category_name || '',
                     'Description': sub.description || '',
                     'Created Date': sub.created_date || ''
@@ -155,10 +155,10 @@ export default function ListSubCategories() {
             doc.text(`Total: ${filteredSubcategories.length}`, 14, 37);
 
             autoTable(doc, {
-                head: [['Name', 'Code', 'Parent', 'Description', 'Created']],
+                head: [['Subcategory Code', 'Subcategory Name', 'Parent Category', 'Description', 'Created']],
                 body: filteredSubcategories.map(sub => [
-                    sub.subcategory_name || '-',
                     sub.subcategory_code || '-',
+                    sub.subcategory_name || '-',
                     sub.category?.category_name || '-',
                     sub.description || '-',
                     sub.created_date || '-'
@@ -221,8 +221,8 @@ export default function ListSubCategories() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Code</TableHead>
-                                <TableHead>Name</TableHead>
+                                <TableHead>Subcategory Code</TableHead>
+                                <TableHead>Subcategory Name</TableHead>
                                 <TableHead>Parent Category</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Created</TableHead>

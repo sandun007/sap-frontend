@@ -18,7 +18,7 @@ import {
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import { Plus, Search, MoreVertical, Edit, Trash2, Download, Upload, FileText, User, Mail, Phone, Briefcase, Users } from 'lucide-react'
 import axios from 'axios'
 
@@ -78,12 +78,10 @@ export default function ListCustomer() {
     try {
       const response = await axios.put(`/customers/${editForm.customer_id}`, editForm)
       if (response.data.success) {
-        setCustomers(customers.map(c =>
-          c.customer_id === editForm.customer_id ? { ...c, ...editForm } : c
-        ))
+        toast.success('Customer updated successfully.')
         setEditDialog({ open: false, customer: null })
         setEditForm({})
-        toast.success('Customer updated successfully.')
+        fetchCustomers()
       }
     } catch (error) {
       console.error('Failed to update customer:', error)
@@ -100,12 +98,12 @@ export default function ListCustomer() {
   // Export to Excel
   const exportToExcel = () => {
     const dataToExport = filteredCustomers.map(c => ({
-      'Code': c.customer_code || '-',
-      'Name': `${c.first_name} ${c.last_name}`,
+      'Customer Code': c.customer_code || '-',
+      'Customer Name': `${c.first_name} ${c.last_name}`,
       'Email': c.email,
       'Phone': c.phone || '-',
-      'Type': c.customer_type || '-',
-      'Company': c.company_name || '-'
+      'Customer Type': c.customer_type || '-',
+      'Company Name': c.company_name || '-'
     }))
     const worksheet = XLSX.utils.json_to_sheet(dataToExport)
     const workbook = XLSX.utils.book_new()
@@ -122,7 +120,7 @@ export default function ListCustomer() {
     doc.setFontSize(10)
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
 
-    const tableColumn = ['Code', 'Name', 'Email', 'Phone', 'Type']
+    const tableColumn = ['Customer Code', 'Customer Name', 'Email', 'Phone', 'Type']
     const tableRows = filteredCustomers.map(c => [
       c.customer_code || '-',
       `${c.first_name} ${c.last_name}`,
@@ -131,7 +129,7 @@ export default function ListCustomer() {
       c.customer_type || '-'
     ])
 
-    doc.autoTable({
+    autoTable(doc, {
       head: [tableColumn],
       body: tableRows,
       startY: 40,
