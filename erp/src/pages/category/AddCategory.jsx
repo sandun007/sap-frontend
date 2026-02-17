@@ -50,7 +50,6 @@ export default function AddCategory() {
         try {
              await axios.post('/categories', formData)
 
-
             toast.success(`Category created successfully!`)
 
 
