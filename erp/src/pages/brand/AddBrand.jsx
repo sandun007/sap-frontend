@@ -18,7 +18,7 @@ export default function AddBrand() {
     }
 
     const [formData, setFormData] = useState({
-        brand_id:generateBrandId(),
+        brand_code:generateBrandId(),
         brand_name: '',
         contact_person: '',
         phone: '',
@@ -59,7 +59,7 @@ export default function AddBrand() {
 
             // Reset
             setFormData({
-                brand_id: generateBrandId(),
+                brand_code: generateBrandId(),
                 brand_name: '',
                 contact_person: '',
                 phone: '',
@@ -75,7 +75,7 @@ export default function AddBrand() {
 
     const handleClear = () => {
         setFormData({
-            brand_id: generateBrandId(),
+            brand_code: generateBrandId(),
             brand_name: '',
             contact_person: '',
             phone: '',
@@ -96,7 +96,7 @@ export default function AddBrand() {
                     <p className="text-muted-foreground">Create a new brand record</p>
                 </div>
                 <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 py-0.5 sm:px-3 sm:py-1 self-start sm:self-auto">
-                    Brand ID: {formData.brand_id}
+                    Brand Code: {formData.brand_code}
                 </Badge>
             </div>
 
