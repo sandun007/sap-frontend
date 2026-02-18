@@ -9,17 +9,16 @@ import {
     NavigationMenuTrigger,
     navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
-import { Button } from "@/components/ui/button.jsx";
-import { Menu, ChevronDown, LogOut, Home, User } from "lucide-react";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet.jsx";
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu.jsx";
-import { cn } from "@/lib/utils.js";
-
+} from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { Menu, ChevronDown, LogOut, Home, User, ChevronRight } from "lucide-react";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 
 const navGroups = [
     {
@@ -87,8 +86,11 @@ const navGroups = [
         title: "Data Capture",
         items: [
             { title: "Sales", url: "/sales" },
+            {
+                title: "Returns",
+                subItems: [{ title: "Customer Returns", url: "/#" }],
+            },
             { title: "Purchases", url: "/purchases" },
-            { title: "Returns", url: "/returns" },
         ],
     },
     {
@@ -122,10 +124,16 @@ function DesktopNav() {
     const location = useLocation();
 
     return (
-        <NavigationMenu className="hidden lg:flex mx-6">
-            <NavigationMenuList className="gap-1">
+        <NavigationMenu className="hidden lg:flex">
+            <NavigationMenuList className="gap-1.5">
                 <NavigationMenuItem>
-                    <Link to="/" className={navigationMenuTriggerStyle()}>
+                    <Link
+                        to="/"
+                        className={cn(
+                            navigationMenuTriggerStyle(),
+                            "bg-transparent text-gray-100 hover:bg-slate-700 hover:text-white transition-colors rounded-md"
+                        )}
+                    >
                         <Home className="mr-2 h-4 w-4" />
                         Home
                     </Link>
@@ -133,16 +141,21 @@ function DesktopNav() {
 
                 {navGroups.map((group) => (
                     <NavigationMenuItem key={group.title}>
-                        <NavigationMenuTrigger className="px-3 py-2">
+                        <NavigationMenuTrigger
+                            className=" px-3 py-2 bg-transparent text-gray-100 hover:bg-slate-700 data-[state=open]:bg-slate-600
+                            data-[state=open]:text-slate-800 transition-colors rounded-md ">
                             {group.title}
                         </NavigationMenuTrigger>
-                        <NavigationMenuContent>
-                            <ul className="grid w-[380px] gap-2 p-4 lg:w-[500px] lg:grid-cols-2">
+                        <NavigationMenuContent className="bg-slate-800 border border-l-slate-50000 text-gray-100 ">
+                            <ul className="grid w-[400px] gap-3 p-4 lg:w-[500px] lg:grid-cols-2">
                                 {group.items.map((item) => (
-                                    <li key={item.title} className="row-span-3">
+                                    <li key={item.title}>
                                         {item.subItems ? (
-                                            <div className="block select-none space-y-1 rounded-md p-3 leading-none outline-none transition-colors hover:bg-accent hover:text-accent-foreground">
-                                                <div className="text-sm font-medium leading-none mb-2">{item.title}</div>
+                                            <div className="block select-none space-y-1 rounded-md p-3 leading-none
+                                            outline-none transition-colors hover:bg-slate-700">
+                                                <div className="text-sm font-medium leading-none mb-2.5 text-gray-100 ">
+                                                    {item.title}
+                                                </div>
                                                 <ul className="space-y-1.5">
                                                     {item.subItems.map((sub) => (
                                                         <li key={sub.title}>
@@ -150,9 +163,12 @@ function DesktopNav() {
                                                                 <Link
                                                                     to={sub.url}
                                                                     className={cn(
-                                                                        "block select-none rounded px-3 py-1.5 text-sm leading-none no-underline outline-none transition-colors hover:bg-accent/80",
+                                                                        "block select-none rounded-md px-3 py-1.5 " +
+                                                                        "text-sm leading-none no-underline outline-none " +
+                                                                        "transition-colors text-gray-300 hover:bg-slate-600 " +
+                                                                        "hover:text-red-400",
                                                                         location.pathname === sub.url &&
-                                                                        "bg-accent text-accent-foreground font-medium"
+                                                                        "bg-slate-600 text-white font-medium"
                                                                     )}
                                                                 >
                                                                     {sub.title}
@@ -168,8 +184,9 @@ function DesktopNav() {
                                                     to={item.url}
                                                     className={cn(
                                                         navigationMenuTriggerStyle(),
-                                                        "justify-start",
-                                                        location.pathname === item.url && "bg-accent text-accent-foreground"
+                                                        "w-full justify-start bg-transparent text-gray-100 hover:bg-slate-700 transition-colors",
+                                                        location.pathname === item.url &&
+                                                        "bg-slate-600 text-white font-medium"
                                                     )}
                                                 >
                                                     {item.icon && <item.icon className="mr-2 h-4 w-4" />}
@@ -191,67 +208,147 @@ function DesktopNav() {
 function MobileNav() {
     const [open, setOpen] = useState(false);
     const location = useLocation();
+    const [expandedItems, setExpandedItems] = useState({});
+
+    const toggleExpand = (title) => {
+        setExpandedItems((prev) => ({
+            ...prev,
+            [title]: !prev[title],
+        }));
+    };
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild className="lg:hidden">
-                <Button variant="ghost" size="icon">
+                <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-gray-100 hover:bg-slate-700 transition-colors"
+                >
                     <Menu className="h-5 w-5" />
+                    <span className="sr-only">Toggle Menu</span>
                 </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="w-80 sm:w-96">
-                <div className="flex flex-col gap-6 py-6">
+
+            <SheetContent
+                side="left"
+                className="w-[85vw] max-w-sm p-0 flex flex-col bg-slate-500 text-gray-100 border-r border-slate-700"
+            >
+                {/* Fixed header */}
+                <div className="border-b border-slate-700 px-5 py-4 shrink-0 bg-slate-800/40">
                     <Link
                         to="/"
-                        className="flex items-center gap-2 text-lg font-semibold"
+                        className="flex items-center gap-2.5 font-bold text-lg text-gray-100"
                         onClick={() => setOpen(false)}
                     >
-                        <Home className="h-5 w-5" />
-                        <span>Home</span>
+                        <Home className="h-5 w-5 text-blue-300" />
+                        <span>ISURU SUPER</span>
                     </Link>
+                </div>
 
+                {/* Scrollable content */}
+                <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-6">
                     {navGroups.map((group) => (
-                        <div key={group.title} className="space-y-3">
-                            <div className="font-medium text-muted-foreground uppercase text-xs tracking-wider">
+                        <div key={group.title} className="mb-8 last:mb-0">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">
                                 {group.title}
-                            </div>
-                            <div className="space-y-1 pl-2 border-l border-border">
-                                {group.items.map((item) => (
-                                    <div key={item.title}>
-                                        {item.subItems ? (
-                                            <>
-                                                <div className="text-sm font-medium py-1">{item.title}</div>
-                                                <div className="space-y-1 pl-4">
-                                                    {item.subItems.map((sub) => (
-                                                        <Link
-                                                            key={sub.title}
-                                                            to={sub.url}
-                                                            className={cn(
-                                                                "block text-sm py-1.5 text-muted-foreground hover:text-foreground",
-                                                                location.pathname === sub.url && "text-foreground font-medium"
-                                                            )}
-                                                            onClick={() => setOpen(false)}
-                                                        >
-                                                            {sub.title}
-                                                        </Link>
-                                                    ))}
-                                                </div>
-                                            </>
-                                        ) : (
-                                            <Link
-                                                to={item.url}
-                                                className={cn(
-                                                    "block text-sm py-1.5 hover:text-foreground",
-                                                    location.pathname === item.url && "text-foreground font-medium"
+                            </h4>
+
+                            {group.title === "Master File" ? (
+                                <div className="space-y-1">
+                                    {group.items.map((item) => {
+                                        const isExpanded = expandedItems[item.title] || false;
+                                        return (
+                                            <div key={item.title}>
+                                                <button
+                                                    onClick={() => toggleExpand(item.title)}
+                                                    className={cn(
+                                                        "flex w-full items-center justify-between py-2.5 px-3 text-sm font-medium rounded-md transition-colors text-gray-100",
+                                                        isExpanded ? "bg-slate-700" : "hover:bg-slate-800"
+                                                    )}
+                                                >
+                                                    <span>{item.title}</span>
+                                                    <ChevronRight
+                                                        className={cn(
+                                                            "h-4 w-4 transition-transform text-slate-800",
+                                                            isExpanded && "rotate-90"
+                                                        )}
+                                                    />
+                                                </button>
+
+                                                {isExpanded && (
+                                                    <div className="pl-7 pb-1 pt-0.5">
+                                                        <div className="space-y-0.5 border-l border-slate-700/50 pl-4">
+                                                            {item.subItems?.map((sub) => (
+                                                                <Link
+                                                                    key={sub.title}
+                                                                    to={sub.url}
+                                                                    className={cn(
+                                                                        "block py-2 px-3 text-sm rounded-md transition-colors text-gray-300",
+                                                                        location.pathname === sub.url
+                                                                            ? "bg-slate-700 text-white font-medium"
+                                                                            : "hover:bg-slate-100 hover:text-gray-100"
+                                                                    )}
+                                                                    onClick={() => setOpen(false)}
+                                                                >
+                                                                    {sub.title}
+                                                                </Link>
+                                                            ))}
+                                                        </div>
+                                                    </div>
                                                 )}
-                                                onClick={() => setOpen(false)}
-                                            >
-                                                {item.title}
-                                            </Link>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            ) : (
+                                <div className="space-y-1">
+                                    {group.items.map((item) => (
+                                        <div key={item.title}>
+                                            {item.subItems ? (
+                                                <>
+                                                    <div className="text-sm font-medium py-2 px-3 text-slate-300">
+                                                        {item.title}
+                                                    </div>
+                                                    <div className="ml-4 space-y-0.5 border-l border-slate-700/50 pl-4">
+                                                        {item.subItems.map((sub) => (
+                                                            <Link
+                                                                key={sub.title}
+                                                                to={sub.url}
+                                                                className={cn(
+                                                                    "block py-2 px-3 text-sm rounded-md transition-colors text-gray-300",
+                                                                    location.pathname === sub.url
+                                                                        ? "bg-slate-700 text-white font-medium"
+                                                                        : "hover:bg-slate-800 hover:text-gray-100"
+                                                                )}
+                                                                onClick={() => setOpen(false)}
+                                                            >
+                                                                {sub.title}
+                                                            </Link>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <Link
+                                                    to={item.url}
+                                                    className={cn(
+                                                        "block py-2.5 px-3 text-sm rounded-md transition-colors text-gray-100 hover:bg-slate-800",
+                                                        location.pathname === item.url
+                                                            ? "bg-slate-700 text-white font-medium"
+                                                            : ""
+                                                    )}
+                                                    onClick={() => setOpen(false)}
+                                                >
+                                                    {item.icon && (
+                                                        <item.icon className="inline mr-2.5 h-4 w-4 text-gray-300" />
+                                                    )}
+                                                    {item.title}
+                                                </Link>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ))}
                 </div>
@@ -262,39 +359,46 @@ function MobileNav() {
 
 export function TopNavbar() {
     return (
-        <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/75">
-            <div className=" flex h-14 items-center justify-between px-4 md:px-6 mx-auto">
-
-                {/* Logo */}
+        <header className="sticky top-0 z-50 w-full border-b bg-slate-900 backdrop-blur-md border-slate-700 text-gray-100">
+            <div className="flex h-14 items-center justify-between px-4 md:px-6 max-w-screen-2xl mx-auto">
                 <div className="flex items-center gap-4">
                     <MobileNav />
                     <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-                        <span className="text-primary">ISURU SUPER</span>
+                        <span className="text-gray-100">ISURU SUPER</span>
                     </Link>
                 </div>
 
-                <div className="flex-1 flex justify-end">
+                <div className="flex-1 flex justify-center lg:justify-end">
                     <DesktopNav />
                 </div>
 
-                {/* User/Admin dropdown */}
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="gap-2 ml-4">
+                        <Button variant="ghost" className="gap-2 text-gray-100 hover:bg-slate-100">
                             <User className="h-4 w-4" />
-                            <span className="hidden sm:inline-block">Admin</span>
-                            <ChevronDown className="h-4 w-4 opacity-60" />
+                            <span className="hidden sm:inline-block font-medium">Admin</span>
+                            <ChevronDown className="h-4 w-4 opacity-70" />
                         </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuContent
+                        align="end"
+                        className="w-56 bg-slate-900 text-gray-100 border border-slate-700 hover:text-gray-100"
+                    >
                         <DropdownMenuItem asChild>
-                            <Link to="/profile">Profile</Link>
+                            <Link to="/profile" className="hover:bg-slate-700 focus:bg-slate-700 hover:text-gray-100">
+                                Profile
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                            <Link to="/settings">Settings</Link>
+                            <Link to="/settings" className="hover:bg-slate-700 focus:bg-slate-700 hover:text-gray-100">
+                                Settings
+                            </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                            <Link to="/login" className="flex items-center text-red-600">
+                            <Link
+                                to="/login"
+                                className="text-red-400 hover:bg-slate-700 focus:bg-slate-700 flex items-center"
+                            >
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Logout
                             </Link>

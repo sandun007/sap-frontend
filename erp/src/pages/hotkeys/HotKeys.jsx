@@ -72,29 +72,6 @@ export default function HotKeys() {
             return false;
         })
 
-        //Show shortcuts
-        hotkeys('1', () => {
-            toast(
-                <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
-                    {`
-                    Ctrl+H => Home Dashboard
-                    Ctrl+P => Products
-                    Ctrl+C => Categories
-                    Ctrl+B => Brands
-                    Shift+B => Branches
-                    Ctrl+D => Departments
-                    Shift+C => Customers
-                    Ctrl+S => Suppliers
-                    Ctrl+E => Employees
-                    `}
-                </div>,
-                {
-                    duration: 8000,
-                    position: 'top-center',
-                });
-            return false;
-        });
-
         // Cleanup
         return () => {
             hotkeys.unbind();

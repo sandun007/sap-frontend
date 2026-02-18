@@ -328,7 +328,7 @@ export default function ListSupplier() {
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <CardTitle>Suppliers</CardTitle>
-                            <CardDescription>
+                            <CardDescription className="text-sm">
                                 {totalItems > 0
                                     ? `Showing ${startIndex + 1}–${Math.min(startIndex + rowsPerPage, totalItems)} of ${totalItems}`
                                     : 'No suppliers found'}
@@ -336,15 +336,15 @@ export default function ListSupplier() {
                         </div>
 
                         {totalItems > 0 && (
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-muted-foreground">Rows per page:</span>
+                            <div className="flex items-center gap-3 text-sm">
+                                <span className="text-muted-foreground whitespace-nowrap">Rows per page:</span>
                                 <select
                                     value={rowsPerPage}
                                     onChange={(e) => {
                                         setRowsPerPage(Number(e.target.value))
                                         setCurrentPage(1)
                                     }}
-                                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm"
+                                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm focus:ring-1 focus:ring-ring"
                                 >
                                     <option value={10}>10</option>
                                     <option value={20}>20</option>
