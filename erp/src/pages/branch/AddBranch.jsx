@@ -244,61 +244,6 @@ export default function AddBranch() {
                         </CardContent>
                     </Card>
 
-                    {/* Branch Preview Card */}
-                    <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-                        <CardHeader>
-                            <CardTitle className="text-blue-800">Branch Preview</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Building2 className="h-4 w-4 text-blue-700" />
-                                <span className="font-semibold">{formData.branch_name || 'Branch Name'}</span>
-                            </div>
-                            {formData.address && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <MapPin className="h-4 w-4 text-blue-800" />
-                                    <span>{formData.address}</span>
-                                </div>
-                            )}
-                            {formData.phone && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Phone className="h-4 w-4 text-black" />
-                                    <span>{formData.phone}</span>
-                                </div>
-                            )}
-                            {formData.email && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Mail className="h-4 w-4 text-green-600" />
-                                    <span>{formData.email}</span>
-                                </div>
-                            )}
-                            {formData.manager_id && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <User className="h-4 w-4 text-green-600" />
-                                    <span>Manager: {formData.manager_id}</span>
-                                </div>
-                            )}
-                            {formData.opening_date && (
-                                <div className="flex items-center gap-2 text-sm">
-                                    <Calendar className="h-4 w-4 text-green-600" />
-                                    <span>Opening: {formData.opening_date}</span>
-                                </div>
-                            )}
-                            <div className="flex items-center gap-2 text-sm pt-2">
-                                {formData.is_active ? (
-                                    <>
-                                        <CheckCircle className="h-4 w-4 text-blue-800" />
-                                        <span className="text-blue-800 font-medium">Active</span>
-                                    </>
-                                ) : (
-                                    <>
-                                        <XCircle className="h-4 w-4 text-gray-500" />
-                                        <span className="text-gray-600 font-medium">Inactive</span>
-                                    </>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
                 </div>
             </div>
 
