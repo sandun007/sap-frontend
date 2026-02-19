@@ -88,7 +88,9 @@ const navGroups = [
             { title: "Sales", url: "/sales" },
             {
                 title: "Returns",
-                subItems: [{ title: "Customer Returns", url: "/#" }],
+                subItems: [
+                    { title: "Customer Returns", url: "/#" }
+                ],
             },
             { title: "Purchases", url: "/purchases" },
         ],
@@ -115,7 +117,6 @@ const navGroups = [
             { title: "Users", url: "/admin/users" },
             { title: "Roles", url: "/admin/roles" },
             { title: "Settings", url: "/admin/settings" },
-            { title: "Logout", url: "/login", icon: LogOut },
         ],
     },
 ];
@@ -385,19 +386,19 @@ export function TopNavbar() {
                         className="w-56 bg-slate-900 text-gray-100 border border-slate-700 hover:text-gray-100"
                     >
                         <DropdownMenuItem asChild>
-                            <Link to="/profile" className="hover:bg-slate-700 focus:bg-slate-700 hover:text-gray-100">
+                            <Link to="/profile" className="hover:bg-slate-700 focus:bg-slate-100 ">
                                 Profile
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                            <Link to="/settings" className="hover:bg-slate-700 focus:bg-slate-700 hover:text-gray-100">
+                            <Link to="/settings" className="hover:bg-slate-700 focus:bg-slate-100 ">
                                 Settings
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
                             <Link
                                 to="/login"
-                                className="text-red-400 hover:bg-slate-700 focus:bg-slate-700 flex items-center"
+                                className="text-red-400 hover:bg-slate-700 focus:bg-slate-100 flex items-center"
                             >
                                 <LogOut className="mr-2 h-4 w-4" />
                                 Logout

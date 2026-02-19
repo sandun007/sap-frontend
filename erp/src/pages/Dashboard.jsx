@@ -25,14 +25,19 @@ import {
     Keyboard
 } from "lucide-react"
 import { toast } from "sonner"
+import logo from "../assets/logo.png"
 
 export default function HomePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col space-y-2">
-        <h1 className="text-4xl font-bold tracking-tight">PosXpress</h1>
-      </div>
+        <div className="flex items-center gap-3">
+            <img
+                src={logo}
+                alt="Logo"
+                className="h-30 w-auto"
+            />
+        </div>
 
             {/* Key Metrics Grid */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
