@@ -24,6 +24,8 @@ import ListBranch from "@/pages/branch/ListBranch";
 import ListSupplier from "@/pages/supplier/ListSupplier.jsx";
 import AddEmployee from "@/pages/employee/AddEmployee.jsx";
 import ListEmployee from "@/pages/employee/ListEmployee.jsx";
+import AddSubCategory from "@/pages/subcategory/AddSubCategory.jsx";
+import ListSubCategories from "@/pages/subcategory/ListSubCategory.jsx";
 
 
 function App() {
@@ -53,6 +55,10 @@ function App() {
                     {/* category */}
                     <Route path="/category/add*" element={<AddCategory/>} />
                     <Route path="/category/list*" element={<ListCategory/>} />
+
+                    //sub category
+                    <Route path="/subcategory/add*" element={<AddSubCategory/>} />
+                    <Route path="/subcategory/list*" element={<ListSubCategories/>} />
 
                     {/* branch */}
                     <Route path="/branch/add*" element={<AddBranch/>} />

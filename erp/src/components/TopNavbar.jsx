@@ -39,6 +39,13 @@ const navGroups = [
                 ],
             },
             {
+                title: "Sub Category",
+                subItems: [
+                    { title: "Add Sub Category", url: "/subcategory/add" },
+                    { title: "Sub Category List", url: "/subcategory/list" },
+                ],
+            },
+            {
                 title: "Brand",
                 subItems: [
                     { title: "Add Brand", url: "/brand/add" },
