@@ -7,9 +7,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Save, X } from 'lucide-react'
+import axios from 'axios'
+import { format } from 'date-fns'
 
 export default function AddSupplier() {
     const [formData, setFormData] = useState({
+        supplier_id: generateSupplierCode(),
         supplier_name: '',
         contact_person: '',
         phone: '',
@@ -17,11 +20,10 @@ export default function AddSupplier() {
         address: '',
         tax_id: '',
         payment_terms: '',
-        website: '',
-        supplier_code: generateSupplierCode(),
+        created_date: format(new Date(), 'yyyy-MM-dd'),
     })
 
-    // Generate unique supplier code (like product ID)
+    // Generate unique supplier code
     function generateSupplierCode() {
         const timestamp = Date.now().toString().slice(-6)
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
@@ -35,7 +37,7 @@ export default function AddSupplier() {
         }))
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if (!formData.supplier_name) {
@@ -43,22 +45,33 @@ export default function AddSupplier() {
             return
         }
 
-        // Reset
-        setFormData({
-            supplier_name: '',
-            contact_person: '',
-            phone: '',
-            email: '',
-            address: '',
-            tax_id: '',
-            payment_terms: '',
-            website: '',
-            supplier_code: generateSupplierCode(),
-        })
+        try {
+            const response = await axios.post('/suppliers', formData)
+            const newSupplier = response.data?.data || response.data
+            const realId = newSupplier?.supplier_id || '—'
+
+            toast.success(`Supplier created successfully! ID: ${realId}`)
+
+            setFormData({
+                supplier_id: generateSupplierCode(),
+                supplier_name: '',
+                contact_person: '',
+                phone: '',
+                email: '',
+                address: '',
+                tax_id: '',
+                payment_terms: '',
+                created_date: format(new Date(), 'yyyy-MM-dd'),
+            })
+        } catch (err) {
+            toast.error("Failed to create supplier. Check console for details.")
+            console.error("Supplier creation failed:", err)
+        }
     }
 
     const handleClear = () => {
         setFormData({
+            supplier_id: generateSupplierCode(),
             supplier_name: '',
             contact_person: '',
             phone: '',
@@ -66,14 +79,13 @@ export default function AddSupplier() {
             address: '',
             tax_id: '',
             payment_terms: '',
-            website: '',
-            supplier_code: generateSupplierCode(),
+            created_date: format(new Date(), 'yyyy-MM-dd'),
         })
         toast.info("Form cleared")
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
@@ -81,7 +93,7 @@ export default function AddSupplier() {
                     <p className="text-muted-foreground">Create a new supplier record</p>
                 </div>
                 <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 py-0.5 sm:px-3 sm:py-1 self-start sm:self-auto">
-                    Supplier ID: {formData.supplier_code}
+                    Supplier ID: {formData.supplier_id}
                 </Badge>
             </div>
 

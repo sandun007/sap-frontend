@@ -73,19 +73,12 @@ export default function ListBrand() {
     const fileInputRef = useRef(null)
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null);
-    const [currentPage, setCurrentPage] = useState(1)
-    const [rowsPerPage, setRowsPerPage] = useState(10)
     const filteredBrands = brands.filter(brand =>
         (brand.brand_name ? brand.brand_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (brand.brand_id  ? String(brand.brand_id).toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (brand.contact_person ? brand.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
         (brand.email ? brand.email.toLowerCase().includes(searchTerm.toLowerCase()) : false)
     );
-
-    const totalItems = filteredBrands.length
-    const totalPages = Math.ceil(totalItems / rowsPerPage)
-    const startIndex = (currentPage - 1) * rowsPerPage
-    const currentBrands = filteredBrands.slice(startIndex, startIndex + rowsPerPage)
 
     useEffect(() => {
         fetchBrands()
@@ -107,6 +100,7 @@ export default function ListBrand() {
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredBrands.map(b => ({
+                'Brand ID': b.brand_id || '',
                 'Brand Name': b.brand_name || '',
                 'Contact Person': b.contact_person || '',
                 'Phone': b.phone || '',
@@ -143,7 +137,7 @@ export default function ListBrand() {
             doc.text(`Total Brands: ${filteredBrands.length}`, 14, 37)
             const tableColumn = ['Brand ID', 'Brand Name', 'Contact', 'Email', 'Phone', 'Status']
             const tableRows = filteredBrands.map(brand => [
-                brand.brand_code|| '-',
+                brand.brand_id || '-',
                 brand.brand_name || '-',
                 brand.contact_person || '-',
                 brand.email || '-',
@@ -220,7 +214,7 @@ export default function ListBrand() {
                 const jsonData = XLSX.utils.sheet_to_json(worksheet)
 
                 const newBrands = jsonData.map((item, index) => ({
-                    brand_code:  generateBrandId(),
+                    brand_id: generateBrandId(),
                     brand_name: item['Brand Name'] || `Imported Brand ${index + 1}`,
                     contact_person: item['Contact Person'] || '',
                     phone: item['Phone'] || '',
@@ -229,23 +223,9 @@ export default function ListBrand() {
                     is_active: item['Status']?.toLowerCase() === 'active',
                     created_date: new Date().toISOString().split('T')[0]
                 }))
-
-                axios.post('/brands/import', { brands: newBrands })
-                    .then(response => {
-                        const { imported, skipped } = response.data;
-                        fetchBrands();
-                        setImportDialog(false);
-                        if (skipped > 0) {
-                            toast.info(`Imported ${imported} • ${skipped} skipped (duplicates)`);
-                        } else {
-                            toast.success(`Imported ${imported} brands`);
-                        }
-                    })
-                    .catch((error) => {
-                        const message = error.response?.data?.message || "Failed to save imported brands to server.";
-                        toast.error(message);
-                    })
-
+                setBrands(prev => [...prev, ...newBrands])
+                setImportDialog(false)
+                toast.success(`Successfully imported ${newBrands.length} brands.`)
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
@@ -258,7 +238,7 @@ export default function ListBrand() {
     // Download import template
     const downloadTemplate = () => {
         const templateData = [{
-            'Brand ID': '',
+            'Brand ID': 'BRAND-XXXXXX-XXXX',
             'Brand Name': 'Sample Brand',
             'Contact Person': 'John Doe',
             'Phone': '+94 XX XXX XXXX',
@@ -357,43 +337,18 @@ export default function ListBrand() {
 
             {/* Brands Table */}
             <Card>
-                <CardHeader className="pb-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <div>
-                            <CardTitle>Brands</CardTitle>
-                            <CardDescription>
-                                {totalItems > 0
-                                    ? `Showing ${startIndex + 1}–${Math.min(startIndex + rowsPerPage, totalItems)} of ${totalItems}`
-                                    : 'No brands found'}
-                            </CardDescription>
-                        </div>
-
-                        {totalItems > 0 && (
-                            <div className="flex items-center gap-3">
-                                <span className="text-sm text-muted-foreground">Rows per page:</span>
-                                <select
-                                    value={rowsPerPage}
-                                    onChange={(e) => {
-                                        setRowsPerPage(Number(e.target.value))
-                                        setCurrentPage(1)
-                                    }}
-                                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm"
-                                >
-                                    <option value={10}>10</option>
-                                    <option value={20}>20</option>
-                                    <option value={50}>50</option>
-                                    <option value={100}>100</option>
-                                </select>
-                            </div>
-                        )}
-                    </div>
+                <CardHeader>
+                    <CardTitle>Brands</CardTitle>
+                    <CardDescription>
+                        {filteredBrands.length} brands found
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Brand Code</TableHead>
-                                <TableHead>Brand Name</TableHead>
+                                <TableHead>Brand</TableHead>
+                                <TableHead>Brand ID</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Web Site</TableHead>
@@ -404,18 +359,17 @@ export default function ListBrand() {
                         </TableHeader>
 
                         <TableBody>
-                            {currentBrands.map((brand) => (
-                                <TableRow key={brand.code || brand.brand_code}>
-                                    <TableCell className="font-mono text-sm">
-                                        {brand.brand_code || '-'}
-                                    </TableCell>
+                            {filteredBrands.map((brand) => (
+                                <TableRow key={brand.id || brand.brand_id}>
                                     <TableCell>
                                         <div className="font-medium">
                                             <div className="h-5 w-5 text-muted-foreground"/>
                                             <span>{brand.brand_name}</span>
-                                            </div>
+                                        </div>
                                     </TableCell>
-
+                                    <TableCell className="font-mono text-sm">
+                                        {brand.brand_id || '-'}
+                                    </TableCell>
                                     <TableCell>{brand.contact_person || '-'}</TableCell>
                                     <TableCell>{brand.email || '-'}</TableCell>
                                     <TableCell>{brand.website || '-'}</TableCell>
@@ -456,43 +410,6 @@ export default function ListBrand() {
                         </div>
                     )}
                 </CardContent>
-                {totalItems > 0 && totalPages > 1 && (
-                    <div className="flex items-center justify-between px-6 py-4 border-t">
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                            disabled={currentPage === 1}
-                        >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Previous
-                        </Button>
-
-                        <div className="flex gap-1">
-                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                                <Button
-                                    key={page}
-                                    variant={page === currentPage ? "default" : "outline"}
-                                    size="sm"
-                                    className="h-8 w-8 p-0"
-                                    onClick={() => setCurrentPage(page)}
-                                >
-                                    {page}
-                                </Button>
-                            ))}
-                        </div>
-
-                        <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                            disabled={currentPage === totalPages}
-                        >
-                            Next
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                        </Button>
-                    </div>
-                )}
             </Card>
 
             {/* Delete Confirmation Dialog */}

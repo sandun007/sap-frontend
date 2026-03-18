@@ -25,6 +25,7 @@ export default function AddCategory() {
 
     const [categoryId] = useState(generateCategoryId());
     const [formData, setFormData] = useState({
+        category_code:generateCategoryId(),
         category_name: '',
         description: '',
         created_date: '',
@@ -47,31 +48,14 @@ export default function AddCategory() {
         }
 
         try {
-            const token = localStorage.getItem('token');
+             await axios.post('/categories', formData)
 
-            const payload = {
-                category_name: formData.category_name,
-                category_code: categoryId,
-                description: formData.description || null,
-                created_date: formData.created_date || null,
-                is_active: formData.is_active ? 1 : 0,
-            };
+            toast.success(`Category created successfully!`)
 
-            const response = await axios.post(
-                'http://127.0.0.1:8000/api/categories',
-                payload,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        'Content-Type': 'application/json',
-                    },
-                }
-            );
-
-            toast.success(response.data.message || 'Category added successfully!');
 
             // Reset form
             setFormData({
+                category_code:generateCategoryId(),
                 category_name: '',
                 description: '',
                 created_date: '',
@@ -90,6 +74,7 @@ export default function AddCategory() {
 
     const handleClear = () => {
         setFormData({
+            category_code:generateCategoryId(),
             category_name: '',
             description: '',
             created_date: '',
@@ -99,7 +84,7 @@ export default function AddCategory() {
     };
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 max-w-7xl">
+        <div className="container px-4 py-6 sm:px-6 lg:px-8 max-w-7xl">
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
@@ -109,12 +94,11 @@ export default function AddCategory() {
                     </p>
                 </div>
                 <Badge variant="secondary" className="text-base px-4 py-1.5">
-                    Category ID: {categoryId}
+                    Category ID: {formData.category_code}
                 </Badge>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 <div className="space-y-6">
                     <Card>
                         <CardHeader>
@@ -147,18 +131,7 @@ export default function AddCategory() {
                                     rows={4}
                                 />
                             </div>
-                        </CardContent>
-                    </Card>
-                </div>
 
-                {/* Right Column */}
-                <div className="space-y-6">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>Additional Details</CardTitle>
-                            <CardDescription>Date and status settings</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-5">
                             <div className="space-y-2">
                                 <Label htmlFor="created_date">Created Date</Label>
                                 <div className="relative">
@@ -174,6 +147,7 @@ export default function AddCategory() {
                             </div>
                         </CardContent>
                     </Card>
+
 
                     <Card>
                         <CardHeader className="pb-3">
@@ -203,6 +177,58 @@ export default function AddCategory() {
                             </div>
                         </CardContent>
                     </Card>
+                </div>
+
+                <div className="space-y-6 lg:sticky lg:top-6 h-fit">
+                    <Card className="border-purple-200 bg-linear-to-br from-purple-50/70 to-pink-50/40 shadow-sm">
+                        <CardHeader className="pb-3">
+                            <CardTitle className="text-blue-800">Live Preview</CardTitle>
+                            <CardDescription>How this category will appear</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="flex items-start gap-3">
+                                <div className="rounded-full bg-purple-100 p-2 mt-0.5">
+                                    <FolderOpen className="h-5 w-5 text-blue-800" />
+                                </div>
+                                <div className="flex-1">
+                                    <p className="font-semibold text-lg">
+                                        {formData.category_name.trim() || 'Category Name'}
+                                    </p>
+                                    {formData.description.trim() && (
+                                        <p className="text-sm text-gray-600 mt-1 leading-relaxed">
+                                            {formData.description}
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="pt-3 border-t border-purple-100 flex flex-wrap gap-3 text-sm">
+                                {formData.created_date && (
+                                    <div className="flex items-center gap-2">
+                                        <Calendar className="h-4 w-4 text-purple-600" />
+                                        <span>
+                      Created:{' '}
+                                            {new Date(formData.created_date).toLocaleDateString()}
+                    </span>
+                                    </div>
+                                )}
+
+                                <Badge
+                                    variant={formData.is_active ? 'default' : 'secondary'}
+                                    className={
+                                        formData.is_active
+                                            ? 'bg-green-600 hover:bg-green-700'
+                                            : ''
+                                    }
+                                >
+                                    {formData.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+
+                                <Badge variant="outline">ID: {categoryId}</Badge>
+                            </div>
+                        </CardContent>
+                    </Card>
+
                 </div>
             </div>
 

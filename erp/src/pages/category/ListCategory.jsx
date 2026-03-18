@@ -141,7 +141,7 @@ export default function ListCategory() {
                 cat.created_date || '-'
             ])
 
-           autoTable(doc,{
+            autoTable(doc,{
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,
@@ -153,15 +153,15 @@ export default function ListCategory() {
 
                 headStyles: {
                     fillColor: [59, 130, 246] },
-                    textColor: 255,
-               fontStyle: 'bold',
-                    columnStyles: {
+                textColor: 255,
+                fontStyle: 'bold',
+                columnStyles: {
                     4: { cellWidth: 30 }
                 },
-               alternateRowStyles: {
-                   fillColor: [245, 245, 245]
-               },
-               margin: { top: 10 }
+                alternateRowStyles: {
+                    fillColor: [245, 245, 245]
+                },
+                margin: { top: 10 }
             })
 
             // Footer
@@ -353,7 +353,7 @@ export default function ListCategory() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-sm">
-                                        {category.category_id || '-'}
+                                        {category.category_code || '-'}
                                     </TableCell>
                                     <TableCell className="max-w-md truncate">
                                         {category.description || '-'}
@@ -432,7 +432,7 @@ export default function ListCategory() {
                     <div className="grid gap-4 py-4">
                         <div className="space-y-2">
                             <Label>Category ID</Label>
-                            <Input value={editForm.category_id || ''} readOnly className="bg-muted" />
+                            <Input value={editForm.category_code || ''} readOnly className="bg-muted" />
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="name">Category Name *</Label>

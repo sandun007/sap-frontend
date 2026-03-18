@@ -72,7 +72,11 @@ export default function AddCustomer() {
                     <h1 className="text-2xl sm:text-3xl font-bold">Add Customer</h1>
                     <p className="text-muted-foreground text-sm sm:text-base">Create new customer account</p>
                 </div>
-                <Badge variant="secondary">Customer</Badge>
+               <Badge variant="secondary">
+  {formData.customer_id ? `Customer - ${formData.customer_id}` : "New Customer"}
+</Badge>
+
+
             </div>
 
             <form onSubmit={handleSubmit}>
@@ -118,10 +122,21 @@ export default function AddCustomer() {
                                         value={formData.address}
                                         onChange={v => handleChange('address', v)}
                             />
-                            <InputField label="Customer Type"
-                                        value={formData.customer_type}
-                                        onChange={v => handleChange('customer_type', v)}
-                            />
+                            
+  <label className="block mb-1 font-small">Customer Type</label>
+  <select
+    className="w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-ring"
+    value={formData.customer_type || ''}
+    onChange={(e) =>
+      handleChange('customer_type', e.target.value)
+    }
+  >
+    <option value="">Select Customer Type</option>
+    <option value="Retail">Retail</option>
+    <option value="Wholesale">Wholesale</option>
+    <option value="Distributor">Distributor</option>
+  </select>
+
                             <InputField label="Registration Date" type="date" icon={Calendar}
                                         value={formData.registration_date}
                                         onChange={v => handleChange('registration_date', v)}

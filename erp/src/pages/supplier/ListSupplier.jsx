@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect} from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -44,8 +44,11 @@ import {
     Building2,
     Download,
     FileText,
-    Upload
+    Upload,
+    ChevronLeft,
+    ChevronRight
 } from 'lucide-react'
+import axios from 'axios'
 
 // Temporary data
 const initialSuppliers = [
@@ -81,12 +84,32 @@ export default function ListSupplier() {
     const [editForm, setEditForm] = useState({})
     const [importDialog, setImportDialog] = useState(false)
     const fileInputRef = useRef(null)
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [currentPage, setCurrentPage] = useState(1)
+    const [rowsPerPage, setRowsPerPage] = useState(10)
     const filteredSuppliers = suppliers.filter(sup =>
-        sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        sup.supplier_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (sup.contact_person && sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (sup.email && sup.email.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+        (sup.supplier_name ? sup.supplier_name.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.supplier_id ? String(sup.supplier_id).toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.contact_person ? sup.contact_person.toLowerCase().includes(searchTerm.toLowerCase()) : false) ||
+        (sup.email ? sup.email.toLowerCase().includes(searchTerm.toLowerCase()) : false)
+    );
+
+    const totalItems = filteredSuppliers.length
+    const totalPages = Math.ceil(totalItems / rowsPerPage)
+    const startIndex = (currentPage - 1) * rowsPerPage
+    const currentSuppliers = filteredSuppliers.slice(startIndex, startIndex + rowsPerPage)
+
+    useEffect(() => {
+        fetchSuppliers()
+    }, [])
+
+    const fetchSuppliers = async () => {
+        setLoading(true)
+        const response = await axios.get('/suppliers')
+        setSuppliers(response.data.data || [])
+        toast.success('Suppliers loaded')
+    }
 
     // Generate unique supplier ID
     const generateSupplierId = () => {
@@ -176,9 +199,22 @@ export default function ListSupplier() {
                     created_date: new Date().toISOString().split('T')[0]
                 }))
 
-                setSuppliers(prev => [...prev, ...newSuppliers])
-                setImportDialog(false)
-                toast.success(`Successfully imported ${newSuppliers.length} suppliers.`)
+                axios.post('/suppliers/import', { suppliers: newSuppliers })
+                    .then(response => {
+                        const { imported, skipped } = response.data;
+                        fetchSuppliers();
+                        setImportDialog(false);
+                        if (skipped > 0) {
+                            toast.info(`Imported ${imported} • ${skipped} skipped (duplicates)`);
+                        } else {
+                            toast.success(`Imported ${imported} suppliers`);
+                        }
+                    })
+                    .catch((error) => {
+                        const message = error.response?.data?.message || "Failed to save imported suppliers to server.";
+                        toast.error(message);
+                    })
+
             } catch (error) {
                 toast.error("Failed to process the Excel file. Please check the format.")
             }
@@ -206,20 +242,28 @@ export default function ListSupplier() {
         toast.success("Supplier import template downloaded successfully.")
     }
 
-    const handleDelete = (supplierId) => {
-        setSuppliers(suppliers.filter(sup => sup.supplier_id !== supplierId))
-        setDeleteDialog({ open: false, supplier: null })
-        toast.success("Supplier deleted successfully")
-    }
+    const handleDelete = async (supplierId) => {
+        try {
+            await axios.delete(`/suppliers/${supplierId}`);
+            toast.success('Supplier deleted successfully');
+            setDeleteDialog({ open: false, supplier: null });
+            fetchSuppliers();
+        } catch (error) {
+            toast.error('Failed to delete supplier: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
-    const handleUpdate = () => {
-        setSuppliers(suppliers.map(sup =>
-            sup.supplier_id === editForm.supplier_id ? { ...sup, ...editForm } : sup
-        ))
-        setEditDialog({ open: false, supplier: null })
-        setEditForm({})
-        toast.success("Supplier updated successfully")
-    }
+    const handleUpdate = async () => {
+        try {
+            await axios.put(`/suppliers/${editForm.supplier_id}`, editForm);
+            toast.success('Supplier updated successfully');
+            setEditDialog({ open: false, supplier: null });
+            setEditForm({});
+            fetchSuppliers();
+        } catch (error) {
+            toast.error('Failed to update supplier: ' + (error.response?.data?.message || error.message));
+        }
+    };
 
     const openEditDialog = (supplier) => {
         setEditDialog({ open: true, supplier })
@@ -231,7 +275,7 @@ export default function ListSupplier() {
     }
 
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8 space-y-4">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
 
             {/* Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
@@ -249,7 +293,7 @@ export default function ListSupplier() {
 
             {/* Search */}
             <Card>
-                <CardContent className="p-6">
+                <CardContent>
                     <div className="flex flex-col sm:flex-row gap-4">
                         <div className="flex-1 relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
@@ -280,9 +324,36 @@ export default function ListSupplier() {
 
             {/* Table */}
             <Card>
-                <CardHeader>
-                    <CardTitle>Suppliers</CardTitle>
-                    <CardDescription>{filteredSuppliers.length} suppliers found</CardDescription>
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <CardTitle>Suppliers</CardTitle>
+                            <CardDescription className="text-sm">
+                                {totalItems > 0
+                                    ? `Showing ${startIndex + 1}–${Math.min(startIndex + rowsPerPage, totalItems)} of ${totalItems}`
+                                    : 'No suppliers found'}
+                            </CardDescription>
+                        </div>
+
+                        {totalItems > 0 && (
+                            <div className="flex items-center gap-3 text-sm">
+                                <span className="text-muted-foreground whitespace-nowrap">Rows per page:</span>
+                                <select
+                                    value={rowsPerPage}
+                                    onChange={(e) => {
+                                        setRowsPerPage(Number(e.target.value))
+                                        setCurrentPage(1)
+                                    }}
+                                    className="h-8 rounded-md border border-input bg-background px-2 py-1 text-sm focus:ring-1 focus:ring-ring"
+                                >
+                                    <option value={10}>10</option>
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                            </div>
+                        )}
+                    </div>
                 </CardHeader>
 
                 <CardContent>
@@ -301,7 +372,7 @@ export default function ListSupplier() {
                         </TableHeader>
 
                         <TableBody>
-                            {filteredSuppliers.map((supplier) => (
+                            {currentSuppliers.map((supplier) => (
                                 <TableRow key={supplier.supplier_id}>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
@@ -348,6 +419,43 @@ export default function ListSupplier() {
                         </TableBody>
                     </Table>
                 </CardContent>
+                {totalItems > 0 && totalPages > 1 && (
+                    <div className="flex items-center justify-between px-6 py-4 border-t">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                            disabled={currentPage === 1}
+                        >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
+                            Previous
+                        </Button>
+
+                        <div className="flex gap-1">
+                            {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                                <Button
+                                    key={page}
+                                    variant={page === currentPage ? "default" : "outline"}
+                                    size="sm"
+                                    className="h-8 w-8 p-0"
+                                    onClick={() => setCurrentPage(page)}
+                                >
+                                    {page}
+                                </Button>
+                            ))}
+                        </div>
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                            disabled={currentPage === totalPages}
+                        >
+                            Next
+                            <ChevronRight className="h-4 w-4 ml-1" />
+                        </Button>
+                    </div>
+                )}
             </Card>
 
             {/* Delete Dialog */}
@@ -428,6 +536,15 @@ export default function ListSupplier() {
                                 placeholder="Email"
                                 value={editForm.email || ''}
                                 onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-email">Address</Label>
+                            <Input
+                                id="edit-address"
+                                placeholder="Address"
+                                value={editForm.address || ''}
+                                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                             />
                         </div>
                     </div>
