@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react"
+import React, { useState, useRef, useEffect } from "react"
 import { Switch } from "@/components/ui/switch"
 
 import {
@@ -35,6 +35,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { toast } from "sonner"
+import axios from "axios"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
 import "jspdf-autotable"
@@ -51,56 +52,60 @@ import {
   User,
 } from "lucide-react"
 
-/* ---------------- TEMP DATA ---------------- */
-const initialDepartments = [
-  {
-    id: 1,
-    department_id: "DEP-001",
-    department_name: "Human Resources",
-    description: "Employee management",
-    branch_id: "BR-001",
-    manager_id: "EMP-10",
-    is_active: true,
-    created_date: "2024-01-10",
-  },
-  {
-    id: 2,
-    department_id: "DEP-002",
-    department_name: "IT Department",
-    description: "System & infrastructure",
-    branch_id: "BR-002",
-    manager_id: "EMP-03",
-    is_active: false,
-    created_date: "2024-02-01",
-  },
-]
+/* Mock data removed */
 
 export default function ListDepartment() {
-  const [departments, setDepartments] = useState(initialDepartments)
+  const [departments, setDepartments] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteDialog, setDeleteDialog] = useState({ open: false, dept: null })
   const [editDialog, setEditDialog] = useState({ open: false, dept: null })
   const [editForm, setEditForm] = useState({})
   const fileInputRef = useRef(null)
 
+  useEffect(() => {
+    fetchDepartments()
+  }, [])
+
+  const fetchDepartments = async () => {
+    setLoading(true)
+    try {
+      const response = await axios.get('/departments')
+      setDepartments(response.data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch departments:', error)
+      toast.error("Failed to load departments from database")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   /* ---------------- FILTER ---------------- */
   const filteredDepartments = departments.filter((d) => {
-  const term = searchTerm.toLowerCase()
+    const term = searchTerm.toLowerCase()
+    const branchName = (d.branch?.branch_name || "").toLowerCase()
+    const managerName = `${d.manager?.first_name || ''} ${d.manager?.last_name || ''}`.toLowerCase()
 
-  return (
-    d.department_name.toLowerCase().includes(term) ||
-    d.department_id.toLowerCase().includes(term) ||
-    d.branch_id.toLowerCase().includes(term) ||
-    (d.manager_id && d.manager_id.toLowerCase().includes(term))
-  )
-})
+    return (
+      d.department_name.toLowerCase().includes(term) ||
+      d.department_id.toString().includes(term) ||
+      branchName.includes(term) ||
+      managerName.includes(term)
+    )
+  })
 
 
   /* ---------------- DELETE ---------------- */
-  const handleDelete = (id) => {
-    setDepartments(departments.filter((d) => d.id !== id))
-    setDeleteDialog({ open: false, dept: null })
-    toast.success("Department deleted successfully")
+  const handleDelete = async (id) => {
+    try {
+      await axios.delete(`/departments/${id}`)
+      setDepartments(departments.filter((d) => d.department_id !== id))
+      setDeleteDialog({ open: false, dept: null })
+      toast.success("Department deleted successfully")
+    } catch (error) {
+      console.error('Failed to delete department:', error)
+      toast.error("Failed to delete department")
+    }
   }
 
   /* ---------------- EDIT ---------------- */
@@ -109,14 +114,22 @@ export default function ListDepartment() {
     setEditForm(dept)
   }
 
-  const handleUpdate = () => {
-    setDepartments(
-      departments.map((d) =>
-        d.id === editForm.id ? { ...d, ...editForm } : d
-      )
-    )
-    setEditDialog({ open: false, dept: null })
-    toast.success("Department updated successfully")
+  const handleUpdate = async () => {
+    try {
+      const response = await axios.put(`/departments/${editForm.department_id}`, editForm)
+      if (response.data.success) {
+        setDepartments(
+          departments.map((d) =>
+            d.department_id === editForm.department_id ? { ...d, ...editForm } : d
+          )
+        )
+        setEditDialog({ open: false, dept: null })
+        toast.success("Department updated successfully")
+      }
+    } catch (error) {
+      console.error('Failed to update department:', error)
+      toast.error("Failed to update department")
+    }
   }
 
   /* ---------------- EXPORT ---------------- */
@@ -138,8 +151,8 @@ export default function ListDepartment() {
       body: filteredDepartments.map((d) => [
         d.department_id,
         d.department_name,
-        d.branch_id,
-        d.manager_id || "-",
+        d.branch?.branch_name || "-",
+        d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
         d.is_active ? "Active" : "Inactive",
       ]),
     })
@@ -228,11 +241,11 @@ export default function ListDepartment() {
                     </TableCell>
                   <TableCell>
                     <GitBranch className="inline h-4 w-4 mr-1" />
-                    {dept.branch_id}
+                    {dept.branch?.branch_name || "-"}
                   </TableCell>
                   <TableCell>
                     <User className="inline h-4 w-4 mr-1" />
-                    {dept.manager_id || "-"}
+                    {dept.manager ? `${dept.manager.first_name} ${dept.manager.last_name}` : "-"}
                   </TableCell>
                   <TableCell>
                     <Badge variant={dept.is_active ? "default" : "secondary"}>
@@ -290,7 +303,7 @@ export default function ListDepartment() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => handleDelete(deleteDialog.dept?.id)}
+              onClick={() => handleDelete(deleteDialog.dept?.department_id)}
             >
               Delete
             </Button>
@@ -298,7 +311,6 @@ export default function ListDepartment() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
       {/* Edit Dialog */}
         <Dialog
           open={editDialog.open}

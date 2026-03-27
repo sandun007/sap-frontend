@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,108 +12,174 @@ import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import {
     Plus, Search, MoreVertical, Edit, Trash2, Download, Upload, User, FileText
 } from 'lucide-react'
-
-// Temporary mock data (same structure as your products)
-const initialEmployees = [
-    {
-        id: 1,
-        employee_id: "EMP-123456-ABCD",
-        full_name: "Nimal Perera",
-        email: "nimal@company.lk",
-        phone: "+94771234567",
-        position: "Senior Developer",
-        department: "Development",
-        join_date: "2023-05-15",
-        is_active: true,
-        address: "Colombo 07",
-        emergency_contact: "Kamal Perera - +94719876543",
-    },
-    {
-        id: 2,
-        employee_id: "EMP-789012-EFGH",
-        full_name: "Kamal Fernando",
-        email: "kamal@company.lk",
-        phone: "+94772345678",
-        position: "Accountant",
-        department: "Finance",
-        join_date: "2024-01-10",
-        is_active: true,
-        address: "Galle",
-        emergency_contact: "Sunil Fernando - +94716543210",
-    },
-    {
-        id: 3,
-        employee_id: "EMP-345678-IJKL",
-        full_name: "Samanthi Silva",
-        email: "samanthi@company.lk",
-        phone: "+94773456789",
-        position: "HR Manager",
-        department: "Human Resources",
-        join_date: "2022-11-20",
-        is_active: true,
-        address: "Kandy",
-        emergency_contact: "Ruwan Silva - +94717766554",
-    }
-]
+import axios from 'axios'
 
 export default function ListEmployee() {
-    const [employees, setEmployees] = useState(initialEmployees)
+    const [employees, setEmployees] = useState([])
+    const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [selectedDepartment, setSelectedDepartment] = useState('all')
     const [deleteDialog, setDeleteDialog] = useState({ open: false, employee: null })
     const [editDialog, setEditDialog] = useState({ open: false, employee: null })
     const [editForm, setEditForm] = useState({})
+    const [allDepartments, setAllDepartments] = useState([])
+    const [editNicFrontPreview, setEditNicFrontPreview] = useState(null)
+    const [editNicBackPreview, setEditNicBackPreview] = useState(null)
+    const [editNicFrontFile, setEditNicFrontFile] = useState(null)
+    const [editNicBackFile, setEditNicBackFile] = useState(null)
+
+    useEffect(() => {
+        fetchEmployees()
+        const fetchDepts = async () => {
+            try {
+                const response = await axios.get('/departments')
+                setAllDepartments(response.data.data || [])
+            } catch (err) {
+                console.error("Failed to fetch departments", err)
+            }
+        }
+        fetchDepts()
+    }, [])
+
+    const fetchEmployees = async () => {
+        setLoading(true)
+        try {
+            const response = await axios.get('/employees')
+            setEmployees(response.data.data || [])
+        } catch (error) {
+            console.error('Failed to fetch employees:', error)
+            toast.error("Failed to load employees from database")
+        } finally {
+            setLoading(false)
+        }
+    }
 
     // Filter employees
     const filteredEmployees = employees.filter(emp => {
-        const matchesSearch = emp.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            emp.email.toLowerCase().includes(searchTerm.toLowerCase())
-        const matchesDepartment = selectedDepartment === 'all' || emp.department === selectedDepartment
+        const fullName = `${emp.first_name || ''} ${emp.last_name || ''}`.toLowerCase()
+        const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
+            (emp.employee_code && emp.employee_code.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (emp.email && emp.email.toLowerCase().includes(searchTerm.toLowerCase()))
+        const matchesDepartment = selectedDepartment === 'all' || emp.department?.department_name === selectedDepartment
         return matchesSearch && matchesDepartment
     })
 
     // Get unique departments
-    const departments = ['all', ...new Set(employees.map(e => e.department))]
+    const departments = ['all', ...new Set(employees.map(e => e.department?.department_name).filter(Boolean))]
 
     // Delete employee
-    const handleDelete = (employeeId) => {
-        setEmployees(employees.filter(emp => emp.id !== employeeId))
-        setDeleteDialog({ open: false, employee: null })
-        toast.success("Employee has been successfully deleted.")
+    const handleDelete = async (employeeId) => {
+        try {
+            await axios.delete(`/employees/${employeeId}`)
+            setEmployees(employees.filter(emp => emp.employee_id !== employeeId))
+            setDeleteDialog({ open: false, employee: null })
+            toast.success("Employee has been successfully deleted.")
+        } catch (error) {
+            console.error('Failed to delete employee:', error)
+            toast.error("Failed to delete employee")
+        }
     }
 
     // Update employee
-    const handleUpdate = () => {
-        setEmployees(employees.map(emp =>
-            emp.id === editForm.id ? { ...emp, ...editForm } : emp
-        ))
-        setEditDialog({ open: false, employee: null })
-        setEditForm({})
-        toast.success("Employee information has been updated successfully.")
+    const handleUpdate = async () => {
+        try {
+            const formData = new FormData();
+            const expectedFields = [
+                'first_name', 'last_name', 'email', 'phone_num1', 'phone_num2', 
+                'nic_num', 'hire_date', 'position', 'salary', 'address', 
+                'date_of_birth', 'department_id', 'is_active', 'employee_code'
+            ];
+
+            expectedFields.forEach(key => {
+                let value = editForm[key];
+                if (key === 'is_active') {
+                    value = value ? '1' : '0';
+                }
+                if (value !== null && value !== undefined) {
+                    formData.append(key, value);
+                }
+            });
+
+            if (editNicFrontFile) {
+                formData.append('nic_front', editNicFrontFile);
+            }
+            if (editNicBackFile) {
+                formData.append('nic_back', editNicBackFile);
+            }
+            formData.append('_method', 'PUT');
+
+            const response = await axios.post(`/employees/${editForm.employee_id}`, formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
+
+            if (response.data.success) {
+                const updatedDept = allDepartments.find(d => String(d.department_id) === String(editForm.department_id))
+                const updatedEmployee = response.data.data || {
+                    ...editForm,
+                    department: updatedDept ? { ...updatedDept } : editForm.department
+                }
+
+                setEmployees(prev => prev.map(emp =>
+                    emp.employee_id === editForm.employee_id ? { ...emp, ...updatedEmployee } : emp
+                ))
+                
+                setEditDialog({ open: false, employee: null })
+                setEditForm({})
+                setEditNicFrontPreview(null)
+                setEditNicBackPreview(null)
+                setEditNicFrontFile(null)
+                setEditNicBackFile(null)
+                toast.success("Employee information has been updated successfully.")
+            }
+        } catch (error) {
+            console.error('Failed to update employee:', error)
+            const errorMsg = error.response?.data?.message || error.response?.data?.error || "Failed to update employee";
+            toast.error(errorMsg)
+        }
+    }
+
+    const handleEditFileChange = (side, file) => {
+        if (!file) return
+        if (side === 'front') {
+            setEditNicFrontFile(file)
+            setEditNicFrontPreview(URL.createObjectURL(file))
+        } else {
+            setEditNicBackFile(file)
+            setEditNicBackPreview(URL.createObjectURL(file))
+        }
     }
 
     // Open edit dialog
     const openEditDialog = (employee) => {
         setEditDialog({ open: true, employee })
-        setEditForm(employee)
+        const deptId = employee.department?.department_id || employee.department_id || ""
+        setEditForm({
+            ...employee,
+            department_id: String(deptId)
+        })
+        setEditNicFrontPreview(employee.nic_front_url)
+        setEditNicBackPreview(employee.nic_back_url)
+        setEditNicFrontFile(null)
+        setEditNicBackFile(null)
     }
 
     // Export to Excel
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredEmployees.map(emp => ({
-                'Employee ID': emp.employee_id,
-                'Full Name': emp.full_name,
+                'Employee Code': emp.employee_code,
+                'Full Name': `${emp.first_name} ${emp.last_name}`,
                 'Email': emp.email,
-                'Phone': emp.phone,
+                'Phone': emp.phone_num1,
                 'Position': emp.position,
-                'Department': emp.department,
-                'Join Date': emp.join_date,
+                'Department': emp.department?.department_name || 'N/A',
+                'Join Date': emp.hire_date,
                 'Status': emp.is_active ? 'Active' : 'Inactive',
                 'Address': emp.address,
                 'Emergency Contact': emp.emergency_contact
@@ -141,15 +207,15 @@ export default function ListEmployee() {
 
             const tableColumn = ['Name', 'ID', 'Position', 'Department', 'Join Date', 'Status']
             const tableRows = filteredEmployees.map(emp => [
-                emp.full_name,
-                emp.employee_id,
+                `${emp.first_name} ${emp.last_name}`,
+                emp.employee_code,
                 emp.position,
-                emp.department,
-                emp.join_date,
+                emp.department?.department_name || 'N/A',
+                emp.hire_date,
                 emp.is_active ? 'Active' : 'Inactive'
             ])
 
-            doc.autoTable({
+            autoTable(doc, {
                 head: [tableColumn],
                 body: tableRows,
                 startY: 45,
@@ -166,8 +232,7 @@ export default function ListEmployee() {
 
     // Add new employee redirect
     const handleAddEmployee = () => {
-        toast.info("Redirecting to add employee form...")
-        // window.location.href = '/employees/add'  // or use react-router
+        window.location.href = '/employee/add'
     }
 
     return (
@@ -253,17 +318,17 @@ export default function ListEmployee() {
                                                 <User className="h-5 w-5" />
                                             </div>
                                             <div>
-                                                <div className="font-medium">{emp.full_name}</div>
+                                                <div className="font-medium">{emp.first_name} {emp.last_name}</div>
                                                 <div className="text-sm text-muted-foreground">
                                                     {emp.email}
                                                 </div>
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-sm">{emp.employee_id}</TableCell>
+                                    <TableCell className="font-mono text-sm">{emp.employee_code}</TableCell>
                                     <TableCell>{emp.position}</TableCell>
-                                    <TableCell>{emp.department}</TableCell>
-                                    <TableCell>{emp.join_date}</TableCell>
+                                    <TableCell>{emp.department?.department_name || 'N/A'}</TableCell>
+                                    <TableCell>{new Date(emp.hire_date).toLocaleDateString()}</TableCell>
                                     <TableCell>
                                         <Badge variant={emp.is_active ? "default" : "secondary"}>
                                             {emp.is_active ? "Active" : "Inactive"}
@@ -316,7 +381,7 @@ export default function ListEmployee() {
                         <Button variant="outline" onClick={() => setDeleteDialog({ open: false, employee: null })}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={() => handleDelete(deleteDialog.employee?.id)}>
+                        <Button variant="destructive" onClick={() => handleDelete(deleteDialog.employee?.employee_id)}>
                             Delete
                         </Button>
                     </DialogFooter>
@@ -325,7 +390,7 @@ export default function ListEmployee() {
 
             {/* Edit Employee Dialog */}
             <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, employee: null })}>
-                <DialogContent>
+                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>Edit Employee</DialogTitle>
                         <DialogDescription>
@@ -333,14 +398,107 @@ export default function ListEmployee() {
                         </DialogDescription>
                     </DialogHeader>
                     <div className="grid gap-4 py-4">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-first-name">First Name</Label>
+                                <Input
+                                    id="edit-first-name"
+                                    value={editForm.first_name || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-last-name">Last Name</Label>
+                                <Input
+                                    id="edit-last-name"
+                                    value={editForm.last_name || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
+                                />
+                            </div>
+                        </div>
+
                         <div className="space-y-2">
-                            <Label htmlFor="edit-name">Full Name</Label>
+                            <Label htmlFor="edit-dob">Date of Birth</Label>
                             <Input
-                                id="edit-name"
-                                value={editForm.full_name || ''}
-                                onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })}
+                                id="edit-dob"
+                                type="date"
+                                value={editForm.date_of_birth || ''}
+                                onChange={(e) => setEditForm({ ...editForm, date_of_birth: e.target.value })}
                             />
                         </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-address">Address</Label>
+                            <Input
+                                id="edit-address"
+                                value={editForm.address || ''}
+                                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                                placeholder="Residential address"
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-nic">NIC Number</Label>
+                            <Input
+                                id="edit-nic"
+                                value={editForm.nic_num || ''}
+                                onChange={(e) => setEditForm({ ...editForm, nic_num: e.target.value })}
+                                placeholder="e.g. 123456789V"
+                                maxLength={20}
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>NIC Front</Label>
+                                <label
+                                    htmlFor="edit-nic-front"
+                                    className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                                    style={{ minHeight: '120px' }}
+                                >
+                                    {editNicFrontPreview ? (
+                                        <img src={editNicFrontPreview} alt="NIC Front" className="h-20 object-cover rounded" />
+                                    ) : (
+                                        <>
+                                            <Upload className="h-8 w-8 text-gray-400 mb-1" />
+                                            <span className="text-xs text-gray-500">Upload front</span>
+                                        </>
+                                    )}
+                                    <input
+                                        id="edit-nic-front"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/jpg"
+                                        className="hidden"
+                                        onChange={(e) => handleEditFileChange('front', e.target.files[0])}
+                                    />
+                                </label>
+                            </div>
+                            <div className="space-y-2">
+                                <Label>NIC Back</Label>
+                                <label
+                                    htmlFor="edit-nic-back"
+                                    className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                                    style={{ minHeight: '120px' }}
+                                >
+                                    {editNicBackPreview ? (
+                                        <img src={editNicBackPreview} alt="NIC Back" className="h-20 object-cover rounded" />
+                                    ) : (
+                                        <>
+                                            <Upload className="h-8 w-8 text-gray-400 mb-1" />
+                                            <span className="text-xs text-gray-500">Upload back</span>
+                                        </>
+                                    )}
+                                    <input
+                                        id="edit-nic-back"
+                                        type="file"
+                                        accept="image/jpeg,image/png,image/jpg"
+                                        className="hidden"
+                                        onChange={(e) => handleEditFileChange('back', e.target.files[0])}
+                                    />
+                                </label>
+                            </div>
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-email">Email</Label>
@@ -352,14 +510,23 @@ export default function ListEmployee() {
                                 />
                             </div>
                             <div className="space-y-2">
-                                <Label htmlFor="edit-phone">Phone</Label>
+                                <Label htmlFor="edit-phone">Phone 1</Label>
                                 <Input
                                     id="edit-phone"
-                                    value={editForm.phone || ''}
-                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                                    value={editForm.phone_num1 || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, phone_num1: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-phone">Phone 2</Label>
+                                <Input
+                                    id="edit-phone"
+                                    value={editForm.phone_num2 || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, phone_num2: e.target.value })}
                                 />
                             </div>
                         </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="edit-position">Position</Label>
@@ -371,19 +538,66 @@ export default function ListEmployee() {
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-department">Department</Label>
+                                <Select 
+                                    value={editForm.department_id ? String(editForm.department_id) : ""} 
+                                    onValueChange={(value) => setEditForm({ ...editForm, department_id: value })}
+                                >
+                                    <SelectTrigger id="edit-department" className="w-full">
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {allDepartments && allDepartments.length > 0 ? (
+                                            allDepartments.map((dept) => (
+                                                <SelectItem key={dept.department_id || Math.random()} value={dept.department_id ? String(dept.department_id) : ""}>
+                                                    {dept.department_name || "Untitled Department"}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <SelectItem value="none" disabled>No departments found</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-hire-date">Hire Date</Label>
                                 <Input
-                                    id="edit-department"
-                                    value={editForm.department || ''}
-                                    onChange={(e) => setEditForm({ ...editForm, department: e.target.value })}
+                                    id="edit-hire-date"
+                                    type="date"
+                                    value={editForm.hire_date || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, hire_date: e.target.value })}
+                                />
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-salary">Salary</Label>
+                                <Input
+                                    id="edit-salary"
+                                    type="number"
+                                    value={editForm.salary || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, salary: e.target.value })}
+                                    placeholder="0.00"
                                 />
                             </div>
                         </div>
+
                         <div className="flex items-center justify-between space-y-0 pt-6">
                             <Label htmlFor="edit-status">Active Status</Label>
                             <Switch
                                 id="edit-status"
                                 checked={editForm.is_active || false}
                                 onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="edit-password">New Password</Label>
+                            <Input
+                                id="edit-password"
+                                type="password"
+                                value={editForm.password || ''}
+                                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                                placeholder="Leave blank to keep current"
                             />
                         </div>
                     </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,46 +23,15 @@ import {
     FileText,
     Building2
 } from 'lucide-react'
+import axios from 'axios'
 
 // Temporary data
-const initialBranches = [
-    {
-        id: 1,
-        branch_id: "BRNCH-890123-AB4X",
-        branch_name: "Negombo Main",
-        address: "No 45, Colombo Road, Negombo",
-        phone: "+94 31 222 3456",
-        email: "negombo@store.lk",
-        manager_id: "EMP-001",
-        opening_date: "2024-01-15",
-        is_active: true
-    },
-    {
-        id: 2,
-        branch_id: "BRNCH-890124-CD5Y",
-        branch_name: "Ja-Ela",
-        address: "251/A, Negombo Road, Ja-Ela",
-        phone: "+94 11 223 5678",
-        email: "jaela@store.lk",
-        manager_id: "EMP-007",
-        opening_date: "2024-03-10",
-        is_active: true
-    },
-    {
-        id: 3,
-        branch_id: "BRNCH-890125-EF6Z",
-        branch_name: "Gampaha",
-        address: "112 Station Road, Gampaha",
-        phone: "+94 33 445 6789",
-        email: "gampaha@store.lk",
-        manager_id: "EMP-014",
-        opening_date: "2024-06-22",
-        is_active: false
-    }
-]
+// Mock data removed
 
 export default function ListBranch() {
-    const [branches, setBranches] = useState(initialBranches)
+    const [branches, setBranches] = useState([])
+    const [employees, setEmployees] = useState([])
+    const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [deleteDialog, setDeleteDialog] = useState({ open: false, branch: null })
     const [editDialog, setEditDialog] = useState({ open: false, branch: null })
@@ -70,29 +39,69 @@ export default function ListBranch() {
     const [editForm, setEditForm] = useState({})
     const fileInputRef = useRef(null)
 
+    useEffect(() => {
+        fetchData()
+    }, [])
+
+    const fetchData = async () => {
+        setLoading(true)
+        try {
+            const [branchRes, empRes] = await Promise.all([
+                axios.get('/branches'),
+                axios.get('/employees')
+            ])
+            setBranches(branchRes.data.data || [])
+            setEmployees(empRes.data.data || [])
+        } catch (error) {
+            console.error('Failed to fetch data:', error)
+            toast.error("Failed to load branches or employees")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     // Filter branches
-    const filteredBranches = branches.filter(branch =>
-        branch.branch_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        branch.branch_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (branch.address && branch.address.toLowerCase().includes(searchTerm.toLowerCase())) ||
-        (branch.manager_id && branch.manager_id.toLowerCase().includes(searchTerm.toLowerCase()))
-    )
+    const filteredBranches = branches.filter(branch => {
+        const branchName = branch.branch_name.toLowerCase()
+        const branchCode = (branch.branch_code || "").toLowerCase()
+        const managerName = `${branch.manager?.first_name || ''} ${branch.manager?.last_name || ''}`.toLowerCase()
+        const term = searchTerm.toLowerCase()
+        
+        return branchName.includes(term) ||
+            branchCode.includes(term) ||
+            (branch.address && branch.address.toLowerCase().includes(term)) ||
+            managerName.includes(term)
+    })
 
     // Delete branch
-    const handleDelete = (branchId) => {
-        setBranches(branches.filter(b => b.id !== branchId))
-        setDeleteDialog({ open: false, branch: null })
-        toast.success("Branch has been successfully deleted.")
+    const handleDelete = async (branchId) => {
+        try {
+            await axios.delete(`/branches/${branchId}`)
+            setBranches(branches.filter(b => b.branch_id !== branchId))
+            setDeleteDialog({ open: false, branch: null })
+            toast.success("Branch has been successfully deleted.")
+        } catch (error) {
+            console.error('Failed to delete branch:', error)
+            toast.error("Failed to delete branch")
+        }
     }
 
     // Update branch
-    const handleUpdate = () => {
-        setBranches(branches.map(b =>
-            b.id === editForm.id ? { ...b, ...editForm } : b
-        ))
-        setEditDialog({ open: false, branch: null })
-        setEditForm({})
-        toast.success("Branch information has been updated successfully.")
+    const handleUpdate = async () => {
+        try {
+            const response = await axios.put(`/branches/${editForm.branch_id}`, editForm)
+            if (response.data.success) {
+                setBranches(branches.map(b =>
+                    b.branch_id === editForm.branch_id ? { ...b, ...editForm } : b
+                ))
+                setEditDialog({ open: false, branch: null })
+                setEditForm({})
+                toast.success("Branch information has been updated successfully.")
+            }
+        } catch (error) {
+            console.error('Failed to update branch:', error)
+            toast.error("Failed to update branch")
+        }
     }
 
     // Open edit dialog
@@ -105,12 +114,12 @@ export default function ListBranch() {
     const exportToExcel = () => {
         try {
             const worksheet = XLSX.utils.json_to_sheet(filteredBranches.map(b => ({
-                'Branch ID': b.branch_id,
+                'Branch Code': b.branch_code,
                 'Branch Name': b.branch_name,
                 'Address': b.address || '',
-                'Phone': b.phone || '',
+                'Phone': b.phone_num1 || '',
                 'Email': b.email || '',
-                'Manager ID': b.manager_id || '',
+                'Manager': b.manager ? `${b.manager.first_name} ${b.manager.last_name}` : 'N/A',
                 'Opening Date': b.opening_date || '',
                 'Status': b.is_active ? 'Active' : 'Inactive'
             })))
@@ -139,11 +148,11 @@ export default function ListBranch() {
 
             const tableColumn = ['Branch ID', 'Branch Name', 'Address', 'Phone', 'Manager ID', 'Status']
             const tableRows = filteredBranches.map(b => [
-                b.branch_id,
+                b.branch_code,
                 b.branch_name,
                 b.address || '-',
-                b.phone || '-',
-                b.manager_id || '-',
+                b.phone_num1 || '-',
+                b.manager ? `${b.manager.first_name} ${b.manager.last_name}` : '-',
                 b.is_active ? 'Active' : 'Inactive'
             ])
 
@@ -296,10 +305,10 @@ export default function ListBranch() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Branch</TableHead>
-                                <TableHead>Branch ID</TableHead>
+                                <TableHead>Branch Code</TableHead>
                                 <TableHead>Address</TableHead>
                                 <TableHead>Phone</TableHead>
-                                <TableHead>Manager ID</TableHead>
+                                <TableHead>Manager</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
@@ -315,10 +324,10 @@ export default function ListBranch() {
                                             <div className="font-medium">{branch.branch_name}</div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-sm">{branch.branch_id}</TableCell>
+                                    <TableCell className="font-mono text-sm">{branch.branch_code}</TableCell>
                                     <TableCell className="max-w-xs truncate">{branch.address || '-'}</TableCell>
-                                    <TableCell>{branch.phone || '-'}</TableCell>
-                                    <TableCell>{branch.manager_id || '-'}</TableCell>
+                                    <TableCell>{branch.phone_num1 || '-'}</TableCell>
+                                    <TableCell>{branch.manager ? `${branch.manager.first_name} ${branch.manager.last_name}` : '-'}</TableCell>
                                     <TableCell>
                                         <Badge variant={branch.is_active ? "default" : "secondary"}>
                                             {branch.is_active ? "Active" : "Inactive"}
@@ -374,7 +383,7 @@ export default function ListBranch() {
                         <Button variant="outline" onClick={() => setDeleteDialog({ open: false, branch: null })}>
                             Cancel
                         </Button>
-                        <Button variant="destructive" onClick={() => handleDelete(deleteDialog.branch?.id)}>
+                        <Button variant="destructive" onClick={() => handleDelete(deleteDialog.branch?.branch_id)}>
                             Delete
                         </Button>
                     </DialogFooter>

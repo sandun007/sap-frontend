@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -7,6 +7,14 @@ import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { Save, X, Building2, Mail, Phone, MapPin, User, Calendar, CheckCircle, XCircle } from 'lucide-react'
+import axios from 'axios'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export default function AddBranch() {
     const [formData, setFormData] = useState({
@@ -20,6 +28,20 @@ export default function AddBranch() {
     })
 
     const [branchId, setBranchId] = useState(generateBranchId())
+    const [employees, setEmployees] = useState([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        const fetchEmployees = async () => {
+            try {
+                const response = await axios.get('/employees')
+                setEmployees(response.data.data || [])
+            } catch (error) {
+                console.error('Failed to fetch employees:', error)
+            }
+        }
+        fetchEmployees()
+    }, [])
 
     // Generate branch ID
     function generateBranchId() {
@@ -49,19 +71,11 @@ export default function AddBranch() {
             return
         }
 
+        setLoading(true)
         try {
-            const response = await fetch('YOUR_API_URL/branches', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer YOUR_ADMIN_TOKEN'
-                },
-                body: JSON.stringify(formData)
-            })
+            const response = await axios.post('/branches', formData)
 
-            const data = await response.json()
-
-            if (response.ok) {
+            if (response.data.success) {
                 toast.success("Branch created successfully")
                 setFormData({
                     branch_name: '',
@@ -74,10 +88,14 @@ export default function AddBranch() {
                 })
                 setBranchId(generateBranchId())
             } else {
-                toast.error(data.message || "Failed to create branch")
+                toast.error(response.data.message || "Failed to create branch")
             }
         } catch (error) {
-            toast.error("Server error")
+            const errorMsg = error.response?.data?.message || "Server error"
+            toast.error(errorMsg)
+            console.error("Branch creation failed:", error)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -188,17 +206,26 @@ export default function AddBranch() {
                             </div>
 
                             <div>
-                                <Label htmlFor="manager_id">Manager ID</Label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        id="manager_id"
-                                        className="pl-10"
-                                        value={formData.manager_id}
-                                        onChange={e => handleInputChange('manager_id', e.target.value)}
-                                        placeholder="Employee ID"
-                                    />
-                                </div>
+                                <Label htmlFor="manager_id">Manager</Label>
+                                <Select 
+                                    value={formData.manager_id?.toString()} 
+                                    onValueChange={(value) => handleInputChange('manager_id', value)}
+                                >
+                                    <SelectTrigger id="manager_id" className="w-full">
+                                        <SelectValue placeholder="Select manager" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {employees.length > 0 ? (
+                                            employees.map((emp) => (
+                                                <SelectItem key={emp.employee_id} value={emp.employee_id.toString()}>
+                                                    {emp.first_name} {emp.last_name}
+                                                </SelectItem>
+                                            ))
+                                        ) : (
+                                            <SelectItem value="none" disabled>No employees found</SelectItem>
+                                        )}
+                                    </SelectContent>
+                                </Select>
                             </div>
 
                             <div>
@@ -252,8 +279,9 @@ export default function AddBranch() {
                 <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
                     <X className="h-4 w-4 mr-2" /> Clear
                 </Button>
-                <Button type="button" className="w-full sm:w-auto gap-2" onClick={handleSubmit}>
-                    <Save className="h-4 w-4 mr-2" /> Save Branch
+                <Button type="button" className="w-full sm:w-auto gap-2" onClick={handleSubmit} disabled={loading}>
+                    <Save className="h-4 w-4" /> 
+                    {loading ? 'Saving...' : 'Save Branch'}
                 </Button>
             </div>
         </div>

@@ -348,7 +348,7 @@ export default function ListBrand() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Brand</TableHead>
-                                <TableHead>Brand ID</TableHead>
+                                <TableHead>Brand Code</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Web Site</TableHead>
@@ -368,13 +368,15 @@ export default function ListBrand() {
                                         </div>
                                     </TableCell>
                                     <TableCell className="font-mono text-sm">
-                                        {brand.brand_id || '-'}
+                                        {brand.brand_code || '-'}
                                     </TableCell>
                                     <TableCell>{brand.contact_person || '-'}</TableCell>
                                     <TableCell>{brand.email || '-'}</TableCell>
                                     <TableCell>{brand.website || '-'}</TableCell>
                                     <TableCell>{brand.phone || '-'}</TableCell>
-                                    <TableCell>{brand.created_date || '-'}</TableCell>
+                                     <TableCell>
+                                         {brand.created_date ? new Date(brand.created_date).toLocaleDateString() : '-'}
+                                     </TableCell>
                                     <TableCell className="text-right">
                                         <DropdownMenu>
                                             <DropdownMenuTrigger asChild>
