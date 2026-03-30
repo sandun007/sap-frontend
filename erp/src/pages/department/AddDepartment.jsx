@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -6,6 +6,14 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { Save, X, Building, FileText, User, Calendar, GitBranch } from 'lucide-react'
+import axios from 'axios'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export default function AddDepartment() {
     const [formData, setFormData] = useState({
@@ -15,6 +23,26 @@ export default function AddDepartment() {
         branch_id: '',
         created_date: ''
     })
+    const [branches, setBranches] = useState([])
+    const [employees, setEmployees] = useState([])
+    const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [branchRes, empRes] = await Promise.all([
+                    axios.get('/branches'),
+                    axios.get('/employees')
+                ])
+                setBranches(branchRes.data.data || [])
+                setEmployees(empRes.data.data || [])
+            } catch (error) {
+                console.error('Failed to fetch initial data:', error)
+                toast.error('Failed to load branches or employees')
+            }
+        }
+        fetchData()
+    }, [])
 
     const handleChange = (field, value) => {
         setFormData(prev => ({
@@ -36,19 +64,11 @@ export default function AddDepartment() {
             return
         }
 
+        setLoading(true)
         try {
-            const response = await fetch('YOUR_API_URL/departments', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer YOUR_ADMIN_TOKEN'
-                },
-                body: JSON.stringify(formData)
-            })
+            const response = await axios.post('/departments', formData)
 
-            const data = await response.json()
-
-            if (response.ok) {
+            if (response.data.success) {
                 toast.success('Department created successfully')
                 setFormData({
                     department_name: '',
@@ -58,10 +78,14 @@ export default function AddDepartment() {
                     created_date: ''
                 })
             } else {
-                toast.error(data.message || 'Failed to create department')
+                toast.error(response.data.message || 'Failed to create department')
             }
         } catch (error) {
-            toast.error('Server error')
+            const errorMsg = error.response?.data?.message || 'Server error'
+            toast.error(errorMsg)
+            console.error('Department creation failed:', error)
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -133,29 +157,49 @@ export default function AddDepartment() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label>Branch ID *</Label>
-                            <div className="relative">
-                                <GitBranch className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    className="pl-10"
-                                    placeholder="Branch ID"
-                                    value={formData.branch_id}
-                                    onChange={e => handleChange('branch_id', e.target.value)}
-                                />
-                            </div>
+                            <Label>Branch *</Label>
+                            <Select 
+                                value={formData.branch_id?.toString()} 
+                                onValueChange={(value) => handleChange('branch_id', value)}
+                            >
+                                <SelectTrigger id="branch_id" className="w-full">
+                                    <SelectValue placeholder="Select branch" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {branches.length > 0 ? (
+                                        branches.map((branch) => (
+                                            <SelectItem key={branch.branch_id} value={branch.branch_id.toString()}>
+                                                {branch.branch_name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="none" disabled>No branches found</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div>
-                            <Label>Manager ID</Label>
-                            <div className="relative">
-                                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    className="pl-10"
-                                    placeholder="Employee ID"
-                                    value={formData.manager_id}
-                                    onChange={e => handleChange('manager_id', e.target.value)}
-                                />
-                            </div>
+                            <Label>Manager</Label>
+                            <Select 
+                                value={formData.manager_id?.toString()} 
+                                onValueChange={(value) => handleChange('manager_id', value)}
+                            >
+                                <SelectTrigger id="manager_id" className="w-full">
+                                    <SelectValue placeholder="Select manager" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {employees.length > 0 ? (
+                                        employees.map((emp) => (
+                                            <SelectItem key={emp.employee_id} value={emp.employee_id.toString()}>
+                                                {emp.first_name} {emp.last_name}
+                                            </SelectItem>
+                                        ))
+                                    ) : (
+                                        <SelectItem value="none" disabled>No employees found</SelectItem>
+                                    )}
+                                </SelectContent>
+                            </Select>
                         </div>
 
                         <div>
@@ -179,8 +223,9 @@ export default function AddDepartment() {
                 <Button variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
                     <X className="h-4 w-4 mr-2" /> Clear
                 </Button>
-                <Button onClick={handleSubmit} className="w-full sm:w-auto gap-2">
-                    <Save className="h-4 w-4 mr-2" /> Save Department
+                <Button onClick={handleSubmit} className="w-full sm:w-auto gap-2" disabled={loading}>
+                    <Save className="h-4 w-4" /> 
+                    {loading ? 'Saving...' : 'Save Department'}
                 </Button>
             </div>
         </div>

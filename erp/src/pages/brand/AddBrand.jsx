@@ -5,19 +5,27 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { Save, X, Building2, Mail, Phone, Globe, User, Calendar } from 'lucide-react'
+import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
+import axios from 'axios'
 
 export default function AddBrand() {
+    // function format date as YYYY-MM-DD
+    const formatDate = (date) => {
+        const year = date.getFullYear()
+        const month = String(date.getMonth() + 1).padStart(2, '0')
+        const day = String(date.getDate()).padStart(2, '0')
+        return `${year}-${month}-${day}`
+    }
+
     const [formData, setFormData] = useState({
+        brand_code:generateBrandId(),
         brand_name: '',
         contact_person: '',
         phone: '',
         email: '',
         website: '',
-        created_date: ''
+        created_date: formatDate(new Date())
     })
-
-    const [brandId, setBrandId] = useState(generateBrandId())
 
     // Generate brand ID
     function generateBrandId() {
@@ -38,60 +46,44 @@ export default function AddBrand() {
 
         // Basic validation
         if (!formData.brand_name) {
-            toast.error("Please enter brand name")
-            return
-        }
-
-        // Email validation
-        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            toast.error("Please enter a valid email address")
+            toast.error("Brand name is required")
             return
         }
 
         try {
-            // API call would go here
-            const response = await fetch('YOUR_API_URL/brands', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer YOUR_TOKEN'
-                },
-                body: JSON.stringify(formData)
+            const response = await axios.post('/brands', formData)
+            const newBrand = response.data?.data || response.data
+            const realId = newBrand?.brand_id || '—'
+
+            toast.success(`Brand created successfully! ID: ${realId}`)
+
+            // Reset
+            setFormData({
+                brand_code: generateBrandId(),
+                brand_name: '',
+                contact_person: '',
+                phone: '',
+                email: '',
+                website: '',
+                created_date: formatDate(new Date())
             })
-
-            if (response.ok) {
-                toast.success("Brand added successfully!")
-
-                // Reset
-                setFormData({
-                    brand_name: '',
-                    contact_person: '',
-                    phone: '',
-                    email: '',
-                    website: '',
-                    created_date: ''
-                })
-                setBrandId(generateBrandId())
-            } else {
-                const error = await response.json()
-                toast.error(error.message || "Failed to add brand")
-            }
-        } catch (error) {
-            console.error('Error:', error)
-            toast.error("An error occurred while adding brand")
+        } catch (err) {
+            toast.error("Failed to create brands. Check console for details.")
+            console.error("Brand creation failed:", err)
         }
     }
 
     const handleClear = () => {
         setFormData({
+            brand_code: generateBrandId(),
             brand_name: '',
             contact_person: '',
             phone: '',
             email: '',
             website: '',
-            created_date: ''
+            created_date: formatDate(new Date())
         })
-        setBrandId(generateBrandId())
+
         toast.info("Form cleared")
     }
 
@@ -101,174 +93,113 @@ export default function AddBrand() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
                 <div>
                     <h1 className="text-2xl sm:text-3xl font-bold">Add New Brand</h1>
-                    <p className="text-muted-foreground text-sm sm:text-base">Create a new brand in your system</p>
+                    <p className="text-muted-foreground">Create a new brand record</p>
                 </div>
-                <Badge variant="secondary" className="text-sm px-3 py-1">
-                    Brand ID: {brandId}
+                <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 py-0.5 sm:px-3 sm:py-1 self-start sm:self-auto">
+                    Brand Code: {formData.brand_code}
                 </Badge>
             </div>
 
-            <div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Left Column - Brand Details */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Brand Information</CardTitle>
-                                <CardDescription>Enter brand basic details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="brand_name">Brand Name *</Label>
-                                    <div className="relative">
-                                        <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="brand_name"
-                                            value={formData.brand_name}
-                                            onChange={(e) => handleInputChange('brand_name', e.target.value)}
-                                            placeholder="Enter brand name"
-                                            className="pl-10"
-                                            required
-                                        />
-                                    </div>
-                                </div>
+            <form onSubmit={handleSubmit}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Brand Information</CardTitle>
+                        <CardDescription>Basic details and primary contact</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="brand_name">Brand Name</Label>
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="brand_name"
+                                    value={formData.brand_name}
+                                    onChange={(e) => handleInputChange('brand_name', e.target.value)}
+                                    placeholder="Enter brand name"
+                                    className="pl-10"
+                                    required
+                                />
+                            </div>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="contact_person">Contact Person</Label>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="contact_person"
-                                            value={formData.contact_person}
-                                            onChange={(e) => handleInputChange('contact_person', e.target.value)}
-                                            placeholder="Enter contact person name"
-                                            className="pl-10"
-                                        />
-                                    </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="contact_person">Contact Person</Label>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="contact_person"
+                                        value={formData.contact_person}
+                                        onChange={(e) => handleInputChange('contact_person', e.target.value)}
+                                        placeholder="Enter contact person name"
+                                        className="pl-10"
+                                    />
                                 </div>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="phone">Phone Number</Label>
+                                <div className="relative">
+                                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone}
+                                        onChange={(e) => handleInputChange('phone', e.target.value)}
+                                        placeholder="+94 XX XXX XXXX"
+                                        className="pl-10"
+                                        maxLength={20}
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="phone">Phone</Label>
-                                    <div className="relative">
-                                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="phone"
-                                            value={formData.phone}
-                                            onChange={(e) => handleInputChange('phone', e.target.value)}
-                                            placeholder="+94 XX XXX XXXX"
-                                            className="pl-10"
-                                            maxLength={20}
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <div className="relative">
+                                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="email"
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={(e) => handleInputChange('email', e.target.value)}
+                                    placeholder="brand@example.com"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
 
-                    {/* Right Column - Contact Details */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Contact Information</CardTitle>
-                                <CardDescription>Email and website details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="email">Email</Label>
-                                    <div className="relative">
-                                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => handleInputChange('email', e.target.value)}
-                                            placeholder="brand@example.com"
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="website">Website</Label>
-                                    <div className="relative">
-                                        <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="website"
-                                            value={formData.website}
-                                            onChange={(e) => handleInputChange('website', e.target.value)}
-                                            placeholder="https://www.example.com"
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <Label htmlFor="created_date">Created Date</Label>
-                                    <div className="relative">
-                                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                        <Input
-                                            id="created_date"
-                                            type="date"
-                                            value={formData.created_date}
-                                            onChange={(e) => handleInputChange('created_date', e.target.value)}
-                                            className="pl-10"
-                                        />
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Brand Preview Card */}
-                        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-                            <CardHeader>
-                                <CardTitle className="text-blue-900">Brand Preview</CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-2">
-                                <div className="flex items-center gap-2">
-                                    <Building2 className="h-4 w-4 text-blue-600" />
-                                    <span className="font-semibold">{formData.brand_name || 'Brand Name'}</span>
-                                </div>
-                                {formData.contact_person && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <User className="h-4 w-4 text-blue-600" />
-                                        <span>{formData.contact_person}</span>
-                                    </div>
-                                )}
-                                {formData.phone && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Phone className="h-4 w-4 text-blue-600" />
-                                        <span>{formData.phone}</span>
-                                    </div>
-                                )}
-                                {formData.email && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Mail className="h-4 w-4 text-blue-600" />
-                                        <span>{formData.email}</span>
-                                    </div>
-                                )}
-                                {formData.website && (
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <Globe className="h-4 w-4 text-blue-600" />
-                                        <span className="text-blue-600 underline">{formData.website}</span>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="website">Website</Label>
+                            <div className="relative">
+                                <Globe className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="website"
+                                    value={formData.website}
+                                    onChange={(e) => handleInputChange('website', e.target.value)}
+                                    placeholder="https://www.example.com"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6 pt-6 border-t">
-                    <Button type="button" variant="outline" className="w-full sm:w-auto" onClick={handleClear}>
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8 pt-6 border-t">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full sm:w-auto"
+                        onClick={handleClear}
+                    >
                         <X className="h-4 w-4 mr-2" />
-                        Clear
+                        Clear Form
                     </Button>
-                    <Button type="button" onClick={handleSubmit} className="w-full sm:w-auto gap-2">
+                    <Button type="submit" className="w-full sm:w-auto gap-2">
                         <Save className="h-4 w-4" />
                         Save Brand
                     </Button>
                 </div>
-            </div>
+            </form>
         </div>
     )
 }

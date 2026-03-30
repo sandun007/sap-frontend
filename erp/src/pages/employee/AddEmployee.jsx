@@ -1,35 +1,65 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
-import { User, Save, X, Upload } from 'lucide-react'
+import {
+    Save, X, User, Mail, Phone, MapPin,
+    CreditCard, Briefcase, DollarSign, Calendar,
+    Building2, Hash, ShieldCheck, Upload
+} from 'lucide-react'
+import axios from "axios";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 export default function AddEmployee() {
     const [formData, setFormData] = useState({
-        full_name: '',
+        employee_code:generateEmployeeId(),
+        first_name: '',
+        last_name: '',
         email: '',
-        phone: '',
-        employee_id: '',
+        phone_num1: '',
+        phone_num2: '',
+        nic_num: '',
+        hire_date: '',
         position: '',
-        department: '',
-        join_date: new Date().toISOString().split('T')[0],
-        is_active: true,
+        salary: '',
         address: '',
-        emergency_contact: '',
-        profile_picture: null,
+        date_of_birth: '',
+        department_id: '',
+        is_active: '1',
+        password: '',
     })
 
-    const [employeeId, setEmployeeId] = useState(generateEmployeeId())
-    const [profileImage, setProfileImage] = useState(null)
-    const fileInputRef = useRef(null)
+    const [nicFront, setNicFront] = useState(null)
+    const [nicBack, setNicBack] = useState(null)
+    const [nicFrontPreview, setNicFrontPreview] = useState(null)
+    const [nicBackPreview, setNicBackPreview] = useState(null)
+    const [loading, setLoading] = useState(false)
+    const [departments, setDepartments] = useState([])
 
-    // Generate employee ID (same pattern as product)
+    const [employeeId] = useState(generateEmployeeId())
+
+    useEffect(() => {
+        const fetchDepartments = async () => {
+            try {
+                const response = await axios.get('/departments')
+                setDepartments(response.data.data || [])
+            } catch (error) {
+                console.error('Failed to fetch departments:', error)
+                toast.error('Failed to load departments')
+            }
+        }
+        fetchDepartments()
+    }, [])
+
     function generateEmployeeId() {
         const timestamp = Date.now().toString().slice(-6)
         const random = Math.random().toString(36).substr(2, 4).toUpperCase()
@@ -37,312 +67,453 @@ export default function AddEmployee() {
     }
 
     const handleInputChange = (field, value) => {
-        setFormData(prev => ({
-            ...prev,
-            [field]: value
-        }))
+        setFormData(prev => ({ ...prev, [field]: value }))
     }
 
-    const handleImageUpload = (event) => {
-        const file = event.target.files[0]
-        if (file) {
-            setProfileImage(URL.createObjectURL(file))
-            toast.success("Profile picture uploaded successfully")
+    const handleFileChange = (side, file) => {
+        if (!file) return
+        if (side === 'front') {
+            setNicFront(file)
+            setNicFrontPreview(URL.createObjectURL(file))
+        } else {
+            setNicBack(file)
+            setNicBackPreview(URL.createObjectURL(file))
         }
     }
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
-        // Basic validation
-        if (!formData.full_name || !formData.email || !formData.position) {
-            toast.error("Please fill in all required fields")
+        if (!formData.first_name || !formData.last_name) {
+            toast.error('First name and last name are required')
+            return
+        }
+        if (!formData.email) {
+            toast.error('Email is required')
+            return
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+            toast.error('Please enter a valid email address')
+            return
+        }
+        if (!formData.password || formData.password.length < 6) {
+            toast.error('Password must be at least 6 characters')
             return
         }
 
-        if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            toast.error("Please enter a valid email address")
-            return
-        }
-
-        const employeeData = {
-            employee_id: employeeId,
-            ...formData
-        }
-
-        console.log('Employee Data:', employeeData)
-        toast.success("Employee added successfully!")
-
-        // Reset form
-        setFormData({
-            full_name: '',
-            email: '',
-            phone: '',
-            employee_id: '',
-            position: '',
-            department: '',
-            join_date: new Date().toISOString().split('T')[0],
-            is_active: true,
-            address: '',
-            emergency_contact: '',
-            profile_picture: null,
+        const formDataToSend = new FormData()
+        Object.keys(formData).forEach(key => {
+            formDataToSend.append(key, formData[key])
         })
-        setEmployeeId(generateEmployeeId())
-        setProfileImage(null)
+        if (nicFront) formDataToSend.append('nic_front', nicFront)
+        if (nicBack) formDataToSend.append('nic_back', nicBack)
+
+        setLoading(true)
+
+        try {
+            const response = await axios.post('/employees', formDataToSend, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            })
+            const newEmployee = response.data?.data || response.data
+            const realId = newEmployee?.employee_id || '—'
+
+            toast.success(`Employee created successfully! ID: ${realId}`)
+            setFormData({
+               employee_code:generateEmployeeId(),
+                first_name: '',
+                last_name: '',
+                email: '',
+                phone_num1: '',
+                phone_num2: '',
+                nic_num: '',
+                hire_date: '',
+                position: '',
+                salary: '',
+                address: '',
+                date_of_birth: '',
+                department_id: '',
+                is_active: '1',
+                password: '',
+        })
+        } catch (err) {
+            toast.error("Failed to create employee. Check console for details.")
+            console.error("Employee creation failed:", err)
+        }
+
     }
+
 
     const handleClear = () => {
         setFormData({
-            full_name: '',
+            employee_code:generateEmployeeId(),
+            first_name: '',
+            last_name: '',
             email: '',
-            phone: '',
-            employee_id: '',
+            phone_num1: '',
+            phone_num2: '',
+            nic_num: '',
+            hire_date: '',
             position: '',
-            department: '',
-            join_date: new Date().toISOString().split('T')[0],
-            is_active: true,
+            salary: '',
             address: '',
-            emergency_contact: '',
-            profile_picture: null,
+            date_of_birth: '',
+            department_id: '',
+            is_active: '1',
+            password: '',
         })
-        setEmployeeId(generateEmployeeId())
-        setProfileImage(null)
-        toast.info("Form cleared")
+        setNicFront(null)
+        setNicBack(null)
+        setNicFrontPreview(null)
+        setNicBackPreview(null)
+        toast.info('Form cleared')
     }
 
+    const fullName = [formData.first_name, formData.last_name].filter(Boolean).join(' ')
+
     return (
-        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="container mx-auto p-6">
             {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl sm:text-3xl font-bold">Add New Employee</h1>
-                    <p className="text-muted-foreground">Create a new employee record</p>
+                    <h1 className="text-3xl font-bold">Add New Employee</h1>
+                    <p className="text-muted-foreground">Register a new employee in the system</p>
                 </div>
-                <Badge variant="secondary" className="text-xs sm:text-sm px-2.5 py-0.5 sm:px-3 sm:py-1 self-start sm:self-auto">
-                    Employee ID: {employeeId}
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                    {employeeId}
                 </Badge>
             </div>
 
-            <form onSubmit={handleSubmit}>
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Main Details */}
-                    <div className="lg:col-span-2 space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Personal Information</CardTitle>
-                                <CardDescription>Basic employee details</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="full_name">Full Name *</Label>
-                                    <Input
-                                        id="full_name"
-                                        value={formData.full_name}
-                                        onChange={(e) => handleInputChange('full_name', e.target.value)}
-                                        placeholder="Enter full name"
-                                        required
-                                    />
-                                </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="email">Email *</Label>
+                {/* LEFT COLUMN */}
+                <div className="space-y-6">
+
+                    {/* Personal Info */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Personal Information</CardTitle>
+                            <CardDescription>Basic employee identity details</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="first_name">First Name </Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                         <Input
-                                            id="email"
-                                            type="email"
-                                            value={formData.email}
-                                            onChange={(e) => handleInputChange('email', e.target.value)}
-                                            placeholder="Enter email address"
+                                            id="first_name"
+                                            value={formData.first_name}
+                                            onChange={(e) => handleInputChange('first_name', e.target.value)}
+                                            placeholder="First name"
+                                            className="pl-10"
                                             required
                                         />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="phone">Phone</Label>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="last_name">Last Name </Label>
+                                    <div className="relative">
+                                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                         <Input
-                                            id="phone"
-                                            value={formData.phone}
-                                            onChange={(e) => handleInputChange('phone', e.target.value)}
-                                            placeholder="Enter phone number"
+                                            id="last_name"
+                                            value={formData.last_name}
+                                            onChange={(e) => handleInputChange('last_name', e.target.value)}
+                                            placeholder="Last name"
+                                            className="pl-10"
+                                            required
                                         />
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <Label htmlFor="address">Address</Label>
-                                    <Textarea
+                            <div className="space-y-2">
+                                <Label htmlFor="date_of_birth">Date of Birth</Label>
+                                <div className="relative">
+                                    <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="date_of_birth"
+                                        type="date"
+                                        value={formData.date_of_birth}
+                                        onChange={(e) => handleInputChange('date_of_birth', e.target.value)}
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="address">Address</Label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
                                         id="address"
                                         value={formData.address}
                                         onChange={(e) => handleInputChange('address', e.target.value)}
-                                        placeholder="Enter full address"
-                                        rows={3}
+                                        placeholder="Residential address"
+                                        className="pl-10"
                                     />
                                 </div>
-                            </CardContent>
-                        </Card>
+                            </div>
+                        </CardContent>
+                    </Card>
 
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Employment Details</CardTitle>
-                                <CardDescription>Role and joining information</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="position">Position*</Label>
+                    {/* NIC Details */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>NIC Details</CardTitle>
+                            <CardDescription>National Identity Card information</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="nic_num">NIC Number</Label>
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="nic_num"
+                                        value={formData.nic_num}
+                                        onChange={(e) => handleInputChange('nic_num', e.target.value)}
+                                        placeholder="e.g. 123456789V"
+                                        className="pl-10"
+                                        maxLength={20}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* NIC Front */}
+                                <div className="space-y-2">
+                                    <Label>NIC Front</Label>
+                                    <label
+                                        htmlFor="nic_front"
+                                        className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                                        style={{ minHeight: '120px' }}
+                                    >
+                                        {nicFrontPreview ? (
+                                            <img src={nicFrontPreview} alt="NIC Front" className="h-20 object-cover rounded" />
+                                        ) : (
+                                            <>
+                                                <Upload className="h-8 w-8 text-gray-400 mb-1" />
+                                                <span className="text-xs text-gray-500">Upload front</span>
+                                            </>
+                                        )}
+                                        <input
+                                            id="nic_front"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/jpg"
+                                            className="hidden"
+                                            onChange={(e) => handleFileChange('front', e.target.files[0])}
+                                        />
+                                    </label>
+                                </div>
+
+                                {/* NIC Back */}
+                                <div className="space-y-2">
+                                    <Label>NIC Back</Label>
+                                    <label
+                                        htmlFor="nic_back"
+                                        className="flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg p-4 cursor-pointer hover:border-blue-400 transition-colors"
+                                        style={{ minHeight: '120px' }}
+                                    >
+                                        {nicBackPreview ? (
+                                            <img src={nicBackPreview} alt="NIC Back" className="h-20 object-cover rounded" />
+                                        ) : (
+                                            <>
+                                                <Upload className="h-8 w-8 text-gray-400 mb-1" />
+                                                <span className="text-xs text-gray-500">Upload back</span>
+                                            </>
+                                        )}
+                                        <input
+                                            id="nic_back"
+                                            type="file"
+                                            accept="image/jpeg,image/png,image/jpg"
+                                            className="hidden"
+                                            onChange={(e) => handleFileChange('back', e.target.files[0])}
+                                        />
+                                    </label>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* RIGHT COLUMN */}
+                <div className="space-y-6">
+
+                    {/* Contact Info */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Contact Information</CardTitle>
+                            <CardDescription>Email and phone details</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email </Label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => handleInputChange('email', e.target.value)}
+                                        placeholder="employee@company.com"
+                                        className="pl-10"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone_num1">Phone 1</Label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="phone_num1"
+                                            value={formData.phone_num1}
+                                            onChange={(e) => handleInputChange('phone_num1', e.target.value)}
+                                            placeholder="+94 XX XXX XXXX"
+                                            className="pl-10"
+                                            maxLength={20}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="phone_num2">Phone 2</Label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="phone_num2"
+                                            value={formData.phone_num2}
+                                            onChange={(e) => handleInputChange('phone_num2', e.target.value)}
+                                            placeholder="+94 XX XXX XXXX"
+                                            className="pl-10"
+                                            maxLength={20}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    {/* Employment Details */}
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Employment Details</CardTitle>
+                            <CardDescription>Position, department and salary</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="position">Position</Label>
+                                    <div className="relative">
+                                        <Briefcase className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                         <Input
                                             id="position"
                                             value={formData.position}
                                             onChange={(e) => handleInputChange('position', e.target.value)}
-                                            placeholder="Enter Employee Position"
-                                            required
+                                            placeholder="e.g. Developer"
+                                            className="pl-10"
                                         />
                                     </div>
-
-                                    <div className="space-y-2">
-                                        <Label htmlFor="department">Department</Label>
-                                        <Select
-                                            value={formData.department}
-                                            onValueChange={(value) => handleInputChange('department', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Select department" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="development">Development</SelectItem>
-                                                <SelectItem value="design">Design</SelectItem>
-                                                <SelectItem value="marketing">Marketing</SelectItem>
-                                                <SelectItem value="finance">Finance</SelectItem>
-                                                <SelectItem value="hr">Human Resources</SelectItem>
-                                                <SelectItem value="operations">Operations</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
                                 </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="department_id">Department </Label>
+                                    <Select 
+                                        value={formData.department_id?.toString()} 
+                                        onValueChange={(value) => handleInputChange('department_id', value)}
+                                    >
+                                        <SelectTrigger id="department_id" className="w-full">
+                                            <SelectValue placeholder="Select department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departments.length > 0 ? (
+                                                departments.map((dept) => (
+                                                    <SelectItem key={dept.department_id} value={dept.department_id.toString()}>
+                                                        {dept.department_name}
+                                                    </SelectItem>
+                                                ))
+                                            ) : (
+                                                <SelectItem value="none" disabled>No departments found</SelectItem>
+                                            )}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <Label htmlFor="join_date">Join Date</Label>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="hire_date">Hire Date</Label>
+                                    <div className="relative">
+                                        <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                         <Input
-                                            id="join_date"
+                                            id="hire_date"
                                             type="date"
-                                            value={formData.join_date}
-                                            onChange={(e) => handleInputChange('join_date', e.target.value)}
-                                        />
-                                    </div>
-
-                                    <div className="flex items-center justify-between pt-8">
-                                        <Label htmlFor="is_active" className="cursor-pointer">
-                                            Employee Status
-                                        </Label>
-                                        <Switch
-                                            id="is_active"
-                                            checked={formData.is_active}
-                                            onCheckedChange={(checked) => handleInputChange('is_active', checked)}
+                                            value={formData.hire_date}
+                                            onChange={(e) => handleInputChange('hire_date', e.target.value)}
+                                            className="pl-10"
                                         />
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-
-                    {/* Profile Picture & Emergency Contact */}
-                    <div className="space-y-6">
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Profile Picture</CardTitle>
-                                <CardDescription>Upload employee photo</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                                    {profileImage ? (
-                                        <div className="space-y-2">
-                                            <img
-                                                src={profileImage}
-                                                alt="Profile"
-                                                className="mx-auto h-32 w-32 object-cover rounded-full"
-                                            />
-                                            <Button
-                                                type="button"
-                                                variant="outline"
-                                                onClick={() => setProfileImage(null)}
-                                            >
-                                                <X className="h-4 w-4 mr-2" />
-                                                Remove
-                                            </Button>
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            <User className="mx-auto h-12 w-12 text-gray-400" />
-                                            <div className="space-y-2">
-                                                <p className="text-sm text-gray-600">Upload profile picture</p>
-                                                <Button
-                                                    type="button"
-                                                    variant="outline"
-                                                    onClick={() => fileInputRef.current?.click()}
-                                                >
-                                                    <Upload className="h-4 w-4 mr-2" />
-                                                    Upload
-                                                </Button>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <input
-                                        ref={fileInputRef}
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        className="hidden"
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card>
-                            <CardHeader>
-                                <CardTitle>Emergency Contact</CardTitle>
-                                <CardDescription>Optional emergency information</CardDescription>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
                                 <div className="space-y-2">
-                                    <Label htmlFor="emergency_contact">Emergency Contact Name</Label>
-                                    <Input
-                                        id="emergency_contact"
-                                        value={formData.emergency_contact}
-                                        onChange={(e) => handleInputChange('emergency_contact', e.target.value)}
-                                        placeholder="Name of contact person"
-                                    />
+                                    <Label htmlFor="salary">Salary</Label>
+                                    <div className="relative">
+                                        <DollarSign className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="salary"
+                                            type="number"
+                                            value={formData.salary}
+                                            onChange={(e) => handleInputChange('salary', e.target.value)}
+                                            placeholder="0.00"
+                                            className="pl-10"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="emergency_phone">Emergency Phone</Label>
-                                    <Input
-                                        id="emergency_phone"
-                                        value={formData.emergency_phone || ''}
-                                        onChange={(e) => handleInputChange('emergency_phone', e.target.value)}
-                                        placeholder="Phone Number"
-                                    />
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </div>
+                            </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-6 pt-6 border-t">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={handleClear}
-                    >
-                        Clear
-                    </Button>
-                    <Button type="submit" className="w-full sm:w-auto gap-2">
-                        <Save className="h-4 w-4" />
-                        Save Employee
-                    </Button>
+                            <div className="space-y-2">
+                                <Label htmlFor="is_active">Status</Label>
+                                <select
+                                    id="is_active"
+                                    value={formData.is_active}
+                                    onChange={(e) => handleInputChange('is_active', e.target.value)}
+                                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                >
+                                    <option value="1">Active</option>
+                                    <option value="0">Inactive</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-2">
+                                <Label htmlFor="password">Password </Label>
+                                <div className="relative">
+                                    <ShieldCheck className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="password"
+                                        type="password"
+                                        value={formData.password}
+                                        onChange={(e) => handleInputChange('password', e.target.value)}
+                                        placeholder="Min. 6 characters"
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
                 </div>
-            </form>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex justify-end gap-4 mt-6 pt-6 border-t">
+                <Button type="button" variant="outline" onClick={handleClear}>
+                    <X className="h-4 w-4 mr-2" />
+                    Clear
+                </Button>
+                <Button type="button" onClick={handleSubmit} disabled={loading} className="gap-2">
+                    <Save className="h-4 w-4" />
+                    {loading ? 'Saving...' : 'Save Employee'}
+                </Button>
+            </div>
         </div>
     )
 }
