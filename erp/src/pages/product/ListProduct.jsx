@@ -9,10 +9,19 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination"
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import { 
   Plus, 
   Search, 
@@ -24,6 +33,9 @@ import {
   FileText,
   Package
 } from 'lucide-react'
+import axios from 'axios'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 
 // Temporary data
 const initialProducts = [
@@ -81,26 +93,111 @@ const initialProducts = [
 ]
 
 export default function ListProduct() {
-  const [products, setProducts] = useState(initialProducts)
+  const navigate = useNavigate()
+  const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [deleteDialog, setDeleteDialog] = useState({ open: false, product: null })
   const [editDialog, setEditDialog] = useState({ open: false, product: null })
   const [importDialog, setImportDialog] = useState(false)
   const [editForm, setEditForm] = useState({})
+  const [categories, setCategories] = useState([])
+  const [brands, setBrands] = useState([])
+  const [subcategories, setSubcategories] = useState([])
+  const [branches, setBranches] = useState([])
   const fileInputRef = useRef(null)
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchTerm, selectedCategory])
+
+  useEffect(() => {
+    fetchProducts()
+    fetchMetadata()
+  }, [])
+
+  const fetchMetadata = async () => {
+    try {
+      const [brandRes, catRes, subRes, branchRes] = await Promise.all([
+        axios.get('/brands'),
+        axios.get('/categories'),
+        axios.get('/subcategories'),
+        axios.get('/branches')
+      ])
+      setBrands(brandRes.data.data || [])
+      setCategories(catRes.data.data || [])
+      setSubcategories(subRes.data.data || [])
+      setBranches(branchRes.data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch metadata:', error)
+    }
+  }
+
+  const fetchProducts = async () => {
+    setLoading(true)
+    try {
+      const response = await axios.get('/products')
+      setProducts(response.data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch products:', error)
+      toast.error("Failed to load products from database")
+    } finally {
+      setLoading(false)
+    }
+  }
 
   // Filter products
   const filteredProducts = products.filter(product => {
-    const matchesSearch = product.product_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.product_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         product.barcode.includes(searchTerm)
-    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory
+    const matchesSearch = (product.product_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.product_code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.barcode || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (product.brand?.brand_name || '').toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesCategory = selectedCategory === 'all' || 
+                           product.subcategory?.subcategory_name === selectedCategory
     return matchesSearch && matchesCategory
   })
 
-  // Get unique categories
-  const categories = ['all', ...new Set(products.map(p => p.category))]
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage)
+  const paginatedProducts = filteredProducts.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  )
+
+  const renderPaginationItems = () => {
+    let items = []
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
+            items.push(
+                <PaginationItem key={i}>
+                  <PaginationLink 
+                    onClick={(e) => { e.preventDefault(); setCurrentPage(i); }} 
+                    isActive={currentPage === i}
+                    className="cursor-pointer"
+                  >
+                    {i}
+                  </PaginationLink>
+                </PaginationItem>
+            )
+        } else if (i === currentPage - 2 || i === currentPage + 2) {
+            items.push(
+                <PaginationItem key={`ellipsis-${i}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+            )
+        }
+    }
+    return items
+  }
+
+  // Get unique categories for filtering
+  const filterCategories = ['all', ...new Set(products.map(p => p.subcategory?.subcategory_name).filter(Boolean))]
 
   // Generate product ID
   function generateProductId() {
@@ -110,44 +207,92 @@ export default function ListProduct() {
   }
 
   // Delete product
-  const handleDelete = (productId) => {
-    setProducts(products.filter(product => product.id !== productId))
-    setDeleteDialog({ open: false, product: null })
-    toast.success("Product has been successfully deleted.")
+  const handleDelete = async (productId) => {
+    try {
+      await axios.delete(`/products/${productId}`)
+      setProducts(products.filter(product => product.product_id !== productId))
+      setDeleteDialog({ open: false, product: null })
+      toast.success("Product has been successfully deleted.")
+    } catch (error) {
+      console.error('Failed to delete product:', error)
+      toast.error("Failed to delete product")
+    }
   }
 
   // Update product
-  const handleUpdate = () => {
-    setProducts(products.map(product => 
-      product.id === editForm.id ? { ...product, ...editForm } : product
-    ))
-    setEditDialog({ open: false, product: null })
-    setEditForm({})
-    toast.success("Product information has been updated successfully.")
+  const handleUpdate = async () => {
+    try {
+      const response = await axios.put(`/products/${editForm.product_id}`, editForm)
+      if (response.data.success) {
+        // Handle Stock Update/Create
+        if (editForm.branch_id && editForm.quantity !== undefined) {
+          try {
+            const currentStock = editDialog.product.stocks?.[0]
+            if (currentStock) {
+              // Update existing stock
+              await axios.put(`/stocks/${currentStock.stock_id}`, {
+                quantity: parseInt(editForm.quantity),
+                branch_id: parseInt(editForm.branch_id)
+              })
+            } else {
+              // Create new stock if none exists
+              await axios.post('/stocks', {
+                product_id: editForm.product_id,
+                branch_id: parseInt(editForm.branch_id),
+                brand_id: parseInt(editForm.brand_id),
+                category_id: parseInt(editForm.category_id),
+                subcategory_id: parseInt(editForm.subcategory_id),
+                product_name: editForm.product_name,
+                quantity: parseInt(editForm.quantity)
+              })
+            }
+          } catch (stockError) {
+            console.error('Failed to update stock:', stockError)
+            toast.warning("Product updated, but stock update failed")
+          }
+        }
+
+        toast.success("Product updated successfully!")
+        setEditDialog({ open: false, product: null })
+        setEditForm({})
+        fetchProducts() // Refresh to get latest stock data
+      }
+    } catch (error) {
+      console.error('Failed to update product:', error)
+      toast.error("Failed to update product")
+    }
   }
 
   // Open edit dialog
   const openEditDialog = (product) => {
     setEditDialog({ open: true, product })
-    setEditForm(product)
+    // Pre-populate form with product data including relationship IDs
+    const currentStock = product.stocks?.[0]
+    setEditForm({
+      ...product,
+      category_id: product.subcategory?.category_id,
+      subcategory_id: product.subcategory_id,
+      unit_price: product.price,
+      branch_id: currentStock?.branch_id?.toString() || '',
+      quantity: currentStock?.quantity?.toString() || '0'
+    })
   }
 
-  // Export to Excel
   const exportToExcel = () => {
     try {
       const worksheet = XLSX.utils.json_to_sheet(filteredProducts.map(product => ({
-        'Product ID': product.product_id,
+        'Product Code': product.product_code,
         'Product Name': product.product_name,
         'Description': product.description,
-        'Unit Price': product.unit_price,
+        'Price': product.price,
         'Cost Price': product.cost_price,
         'Barcode': product.barcode,
-        'Category': product.category,
-        'Brand': product.brand,
-        'Supplier': product.supplier,
-        'Stock Quantity': product.stock_quantity,
-        'Status': product.is_active ? 'Active' : 'Inactive',
-        'Created Date': product.created_date
+        'Category': product.subcategory?.category?.category_name || 'N/A',
+        'Subcategory': product.subcategory?.subcategory_name || 'N/A',
+        'Brand': product.brand?.brand_name || 'N/A',
+        'Stock Quantity': product.stocks?.[0]?.quantity || 0,
+        'Status': product.status || (product.is_active ? 'active' : 'inactive'),
+        'Created Date': product.created_at ? new Date(product.created_at).toLocaleDateString() : 'N/A'
       })))
       
       const workbook = XLSX.utils.book_new()
@@ -156,11 +301,11 @@ export default function ListProduct() {
       
       toast.success(`Exported ${filteredProducts.length} products to Excel.`)
     } catch (error) {
+      console.error('Export failed:', error)
       toast.error("Failed to export products to Excel.")
     }
   }
 
-  // Export to PDF
   const exportToPDF = () => {
     try {
       const doc = new jsPDF()
@@ -173,18 +318,18 @@ export default function ListProduct() {
       doc.text(`Total Products: ${filteredProducts.length}`, 14, 37)
 
       // Table data
-      const tableColumn = ['Product', 'Product ID', 'Category', 'Price', 'Stock', 'Status']
+      const tableColumn = ['Product Code', 'Product Name', 'Brand', 'Category', 'Price', 'Stock']
       const tableRows = filteredProducts.map(product => [
+        product.product_code || 'N/A',
         product.product_name,
-        product.product_id,
-        product.category,
-        `Rs.${product.unit_price}`,
-        product.stock_quantity.toString(),
-        product.is_active ? 'Active' : 'Inactive'
+        product.brand?.brand_name || 'N/A',
+        product.subcategory?.category?.category_name || 'N/A',
+        `Rs.${product.price}`,
+        (product.stocks?.[0]?.quantity || 0).toString()
       ])
 
       // Add table
-      doc.autoTable({
+      autoTable(doc, {
         head: [tableColumn],
         body: tableRows,
         startY: 45,
@@ -197,6 +342,7 @@ export default function ListProduct() {
       
       toast.success(`Generated PDF report with ${filteredProducts.length} products.`)
     } catch (error) {
+      console.error('PDF export failed:', error)
       toast.error("Failed to generate PDF report.")
     }
   }
@@ -271,7 +417,7 @@ export default function ListProduct() {
 
   // Add new product
   const handleAddProduct = () => {
-    toast.info("Redirecting to add product form...")
+    navigate('/products/add')
   }
 
   return (
@@ -295,7 +441,7 @@ export default function ListProduct() {
             <div className="flex-1 relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products by name, Product ID, or barcode..."
+                placeholder="Search products by name, brand, code, or barcode..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
@@ -306,7 +452,7 @@ export default function ListProduct() {
                 <SelectValue placeholder="Filter by category" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map(category => (
+                {filterCategories.map(category => (
                   <SelectItem key={category} value={category}>
                     {category === 'all' ? 'All Categories' : category}
                   </SelectItem>
@@ -343,8 +489,8 @@ export default function ListProduct() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
-                <TableHead>Product ID</TableHead>
+                <TableHead>Product Code</TableHead>
+                <TableHead>Product Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Brand</TableHead>
                 <TableHead>Price</TableHead>
@@ -354,8 +500,18 @@ export default function ListProduct() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredProducts.map((product) => (
-                <TableRow key={product.id}>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={8} className="text-center py-8">
+                    <div className="flex items-center justify-center gap-2">
+                       <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+                       Loading products...
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : paginatedProducts.map((product) => (
+                <TableRow key={product.product_id}>
+                  <TableCell className="font-mono text-sm">{product.product_code}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
@@ -364,31 +520,32 @@ export default function ListProduct() {
                       <div>
                         <div className="font-medium">{product.product_name}</div>
                         <div className="text-sm text-muted-foreground">
-                          {product.barcode}
+                          {product.barcode || 'No Barcode'}
                         </div>
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{product.product_id}</TableCell>
-                  <TableCell>{product.category}</TableCell>
-                  <TableCell>{product.brand}</TableCell>
+                  <TableCell>{product.subcategory?.category?.category_name || 'N/A'}</TableCell>
+                  <TableCell>{product.brand?.brand_name || 'N/A'}</TableCell>
                   <TableCell>
-                    <div className="font-medium">Rs.{product.unit_price}</div>
-                    <div className="text-sm text-muted-foreground">
-                      Cost: Rs.{product.cost_price}
-                    </div>
+                    <div className="font-medium">Rs.{product.price}</div>
+                    {product.cost_price && (
+                      <div className="text-sm text-muted-foreground">
+                        Cost: Rs.{product.cost_price}
+                      </div>
+                    )}
                   </TableCell>
                   <TableCell>
                     <Badge 
-                      variant={product.stock_quantity > 10 ? "default" : 
-                              product.stock_quantity > 0 ? "secondary" : "destructive"}
+                      variant={(product.stocks?.[0]?.quantity || 0) > 10 ? "default" : 
+                              (product.stocks?.[0]?.quantity || 0) > 0 ? "secondary" : "destructive"}
                     >
-                      {product.stock_quantity} in stock
+                      {product.stocks?.[0]?.quantity || 0} in stock
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={product.is_active ? "default" : "secondary"}>
-                      {product.is_active ? "Active" : "Inactive"}
+                    <Badge variant={product.status === 'active' || product.is_active ? "default" : "secondary"}>
+                      {product.status || (product.is_active ? "active" : "inactive")}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">
@@ -403,7 +560,9 @@ export default function ListProduct() {
                           <Edit className="h-4 w-4 mr-2" />
                           Edit
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, product })}>
+                        <DropdownMenuItem onClick={() => setDeleteDialog({ open: true, product })}
+                          className="text-destructive focus:text-destructive"
+                        >
                           <Trash2 className="h-4 w-4 mr-2" />
                           Delete
                         </DropdownMenuItem>
@@ -424,6 +583,33 @@ export default function ListProduct() {
         </CardContent>
       </Card>
 
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="mt-4 flex justify-center">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.max(1, p - 1)) }} 
+                    className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+                
+                {renderPaginationItems()}
+                
+                <PaginationItem>
+                  <PaginationNext 
+                    href="#"
+                    onClick={(e) => { e.preventDefault(); setCurrentPage(p => Math.min(totalPages, p + 1)) }} 
+                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+        </div>
+      )}
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={deleteDialog.open} onOpenChange={() => setDeleteDialog({ open: false, product: null })}>
         <DialogContent>
@@ -438,7 +624,7 @@ export default function ListProduct() {
             <Button variant="outline" onClick={() => setDeleteDialog({ open: false, product: null })}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => handleDelete(deleteDialog.product?.id)}>
+            <Button variant="destructive" onClick={() => handleDelete(deleteDialog.product?.product_id)}>
               Delete
             </Button>
           </DialogFooter>
@@ -454,8 +640,7 @@ export default function ListProduct() {
               Update product information for {editDialog.product?.product_name}
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                       <Label htmlFor="edit-name">Product Name</Label>
@@ -466,28 +651,36 @@ export default function ListProduct() {
                       />
                   </div>
                   <div className="space-y-2">
-                      <Label htmlFor="edit-product-id">Product ID</Label>
+                      <Label htmlFor="edit-product-code">Product Code</Label>
                       <Input
-                          id="edit-product-id"
-                          value={editForm.product_id || ''}
-                          onChange={(e) => setEditForm({ ...editForm, product_id: e.target.value })}
+                          id="edit-product-code"
+                          value={editForm.product_code || ''}
+                          onChange={(e) => setEditForm({ ...editForm, product_code: e.target.value })}
                       />
                   </div>
               </div>
 
-              {/* Unit Price + Cost Price – side by side on md+ */}
+              <div className="space-y-2">
+                  <Label htmlFor="edit-description">Description</Label>
+                  <Input
+                      id="edit-description"
+                      value={editForm.description || ''}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                      <Label htmlFor="edit-price">Unit Price</Label>
+                      <Label htmlFor="edit-price">Unit Price (Rs.)</Label>
                       <Input
                           id="edit-price"
                           type="number"
-                          value={editForm.unit_price || ''}
-                          onChange={(e) => setEditForm({ ...editForm, unit_price: parseFloat(e.target.value) })}
+                          value={editForm.price || ''}
+                          onChange={(e) => setEditForm({ ...editForm, price: parseFloat(e.target.value) })}
                       />
                   </div>
                   <div className="space-y-2">
-                      <Label htmlFor="edit-cost">Cost Price</Label>
+                      <Label htmlFor="edit-cost">Cost Price (Rs.)</Label>
                       <Input
                           id="edit-cost"
                           type="number"
@@ -497,24 +690,133 @@ export default function ListProduct() {
                   </div>
               </div>
 
-              {/* Stock Quantity + Active Status – side by side on md+ */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="space-y-2">
-                      <Label htmlFor="edit-stock">Stock Quantity</Label>
+                      <Label htmlFor="edit-barcode">Barcode</Label>
                       <Input
-                          id="edit-stock"
-                          type="number"
-                          value={editForm.stock_quantity || ''}
-                          onChange={(e) => setEditForm({ ...editForm, stock_quantity: parseInt(e.target.value) })}
+                          id="edit-barcode"
+                          value={editForm.barcode || ''}
+                          onChange={(e) => setEditForm({ ...editForm, barcode: e.target.value })}
                       />
                   </div>
-                  <div className="flex items-center justify-between pt-6">
-                      <Label htmlFor="edit-status">Active Status</Label>
-                      <Switch
-                          id="edit-status"
-                          checked={editForm.is_active || false}
-                          onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-weight">Weight (kg)</Label>
+                      <Input
+                          id="edit-weight"
+                          value={editForm.weight || ''}
+                          onChange={(e) => setEditForm({ ...editForm, weight: e.target.value })}
                       />
+                  </div>
+                  <div className="space-y-2">
+                      <Label htmlFor="edit-dimensions">Dimensions</Label>
+                      <Input
+                          id="edit-dimensions"
+                          value={editForm.dimensions || ''}
+                          onChange={(e) => setEditForm({ ...editForm, dimensions: e.target.value })}
+                      />
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                      <Label>Category</Label>
+                      <Select 
+                        value={editForm.category_id?.toString() || ''} 
+                        onValueChange={(val) => setEditForm({...editForm, category_id: val})}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select Category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {categories.map(c => (
+                                  <SelectItem key={c.category_id} value={c.category_id.toString()}>
+                                      {c.category_name}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <Label>Subcategory</Label>
+                      <Select 
+                        value={editForm.subcategory_id?.toString() || ''} 
+                        onValueChange={(val) => setEditForm({...editForm, subcategory_id: val})}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select Subcategory" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {subcategories
+                                .filter(s => String(s.category_id) === String(editForm.category_id))
+                                .map(s => (
+                                  <SelectItem key={s.subcategory_id} value={s.subcategory_id.toString()}>
+                                      {s.subcategory_name}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+                  <div className="space-y-2">
+                      <Label>Brand</Label>
+                      <Select 
+                        value={editForm.brand_id?.toString() || ''} 
+                        onValueChange={(val) => setEditForm({...editForm, brand_id: val})}
+                      >
+                          <SelectTrigger>
+                              <SelectValue placeholder="Select Brand" />
+                          </SelectTrigger>
+                          <SelectContent>
+                              {brands.map(b => (
+                                  <SelectItem key={b.brand_id} value={b.brand_id.toString()}>
+                                      {b.brand_name}
+                                  </SelectItem>
+                              ))}
+                          </SelectContent>
+                      </Select>
+                  </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-branch">Stock Branch</Label>
+                    <Select 
+                      value={editForm.branch_id || ''} 
+                      onValueChange={(v) => setEditForm({...editForm, branch_id: v})}
+                    >
+                        <SelectTrigger id="edit-branch">
+                            <SelectValue placeholder="Select Branch" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {branches.map(b => (
+                                <SelectItem key={b.branch_id} value={b.branch_id.toString()}>
+                                    {b.branch_name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="edit-quantity">Stock Quantity</Label>
+                    <Input
+                        id="edit-quantity"
+                        type="number"
+                        value={editForm.quantity || '0'}
+                        onChange={(e) => setEditForm({ ...editForm, quantity: e.target.value })}
+                    />
+                  </div>
+              </div>
+              <div className="flex items-center justify-between pt-2">
+                  <div className="flex items-center space-x-2">
+                    <Label htmlFor="edit-status">Active Status</Label>
+                    <Switch
+                        id="edit-status"
+                        checked={editForm.status === 'active' || editForm.is_active}
+                        onCheckedChange={(checked) => setEditForm({ 
+                          ...editForm, 
+                          status: checked ? 'active' : 'inactive',
+                          is_active: checked 
+                        })}
+                    />
                   </div>
               </div>
           </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -8,44 +8,23 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Switch } from '@/components/ui/switch'
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 import { toast } from 'sonner'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import 'jspdf-autotable'
-import { Plus, Search, MoreVertical, Edit, Trash2, Download, Upload, FileText, User } from 'lucide-react'
-
-// Temporary data
-const initialCustomers = [
-  {
-    customer_id: "CUST-000001-ABCD",
-    first_name: 'kavindu',
-    last_name: 'Jayanath',
-    company_name: 'Tech Solutions',
-    email: 'kavindu@example.com',
-    phone: '+94 71 123 4567',
-    address: 'Colombo, Sri Lanka',
-    customer_type: 'Regular',
-    registration_date: '2025-01-01',
-    credit_limit: 10000,
-    is_active: true,
-  },
-  {
-    customer_id: "CUST-000002-EFGH",
-    first_name: 'Tharindu',
-    last_name: 'Fernando',
-    company_name: 'ABC Corp',
-    email: 'tharindu@example.com',
-    phone: '+94 77 765 4321',
-    address: 'Kandy, Sri Lanka',
-    customer_type: 'VIP',
-    registration_date: '2025-01-15',
-    credit_limit: 50000,
-    is_active: false,
-  },
-]
+import { Plus, Search, MoreVertical, Edit, Trash2, Download, Upload, FileText, User, Mail, Phone, Briefcase, Users } from 'lucide-react'
+import axios from 'axios'
 
 export default function ListCustomer() {
-  const [customers, setCustomers] = useState(initialCustomers)
+  const [customers, setCustomers] = useState([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [deleteDialog, setDeleteDialog] = useState({ open: false, customer: null })
   const [editDialog, setEditDialog] = useState({ open: false, customer: null })
@@ -53,32 +32,63 @@ export default function ListCustomer() {
   const [editForm, setEditForm] = useState({})
   const fileInputRef = useRef(null)
 
-  // Filter customers
-  const filteredCustomers = customers.filter(c =>
-    `${c.first_name} ${c.last_name}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.customer_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.customer_type?.toLowerCase().includes(searchTerm.toLowerCase())
-  )
+  useEffect(() => {
+    fetchCustomers()
+  }, [])
 
-  // Generate customer ID
-  const generateCustomerId = () => `CUST-${Date.now().toString().slice(-6)}-${Math.random().toString(36).substr(2, 4).toUpperCase()}`
+  const fetchCustomers = async () => {
+    setLoading(true)
+    try {
+      const response = await axios.get('/customers')
+      setCustomers(response.data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch customers:', error)
+      toast.error("Failed to load customers")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Filter customers
+  const filteredCustomers = customers.filter(c => {
+    const term = searchTerm.toLowerCase()
+    return (
+        `${c.first_name} ${c.last_name}`.toLowerCase().includes(term) ||
+        (c.customer_code || "").toLowerCase().includes(term) ||
+        (c.email || "").toLowerCase().includes(term) ||
+        (c.customer_type || "").toLowerCase().includes(term)
+    )
+  })
 
   // Delete customer
-  const handleDelete = (customerId) => {
-    setCustomers(customers.filter(c => c.customer_id !== customerId))
-    setDeleteDialog({ open: false, customer: null })
-    toast.success('Customer deleted successfully.')
+  const handleDelete = async (customerId) => {
+    try {
+      await axios.delete(`/customers/${customerId}`)
+      setCustomers(customers.filter(c => c.customer_id !== customerId))
+      setDeleteDialog({ open: false, customer: null })
+      toast.success('Customer deleted successfully.')
+    } catch (error) {
+      console.error('Failed to delete customer:', error)
+      toast.error('Failed to delete customer')
+    }
   }
 
   // Update customer
-  const handleUpdate = () => {
-    setCustomers(customers.map(c =>
-      c.customer_id === editForm.id ? { ...c, ...editForm } : c
-    ))
-    setEditDialog({ open: false, customer: null })
-    setEditForm({})
-    toast.success('Customer updated successfully.')
+  const handleUpdate = async () => {
+    try {
+      const response = await axios.put(`/customers/${editForm.customer_id}`, editForm)
+      if (response.data.success) {
+        setCustomers(customers.map(c =>
+          c.customer_id === editForm.customer_id ? { ...c, ...editForm } : c
+        ))
+        setEditDialog({ open: false, customer: null })
+        setEditForm({})
+        toast.success('Customer updated successfully.')
+      }
+    } catch (error) {
+      console.error('Failed to update customer:', error)
+      toast.error('Failed to update customer')
+    }
   }
 
   // Open edit dialog
@@ -89,7 +99,15 @@ export default function ListCustomer() {
 
   // Export to Excel
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredCustomers)
+    const dataToExport = filteredCustomers.map(c => ({
+      'Code': c.customer_code || '-',
+      'Name': `${c.first_name} ${c.last_name}`,
+      'Email': c.email,
+      'Phone': c.phone || '-',
+      'Type': c.customer_type || '-',
+      'Company': c.company_name || '-'
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(dataToExport)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Customers')
     XLSX.writeFile(workbook, `customers_${new Date().toISOString().split('T')[0]}.xlsx`)
@@ -104,14 +122,13 @@ export default function ListCustomer() {
     doc.setFontSize(10)
     doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 14, 30)
 
-    const tableColumn = ['ID', 'Name', 'Email', 'Phone', 'Customer Type', 'Status']
+    const tableColumn = ['Code', 'Name', 'Email', 'Phone', 'Type']
     const tableRows = filteredCustomers.map(c => [
-        c.customer_id,
+      c.customer_code || '-',
       `${c.first_name} ${c.last_name}`,
       c.email,
       c.phone || '-',
-      c.customer_type || '-',
-      c.is_active ? 'Active' : 'Inactive'
+      c.customer_type || '-'
     ])
 
     doc.autoTable({
@@ -126,67 +143,7 @@ export default function ListCustomer() {
     toast.success('PDF generated successfully.')
   }
 
-  // Handle Excel import
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      try {
-        const data = new Uint8Array(e.target.result)
-        const workbook = XLSX.read(data, { type: 'array' })
-        const worksheet = workbook.Sheets[workbook.SheetNames[0]]
-        const jsonData = XLSX.utils.sheet_to_json(worksheet)
-
-        const newCustomers = jsonData.map((item, index) => ({
-          customer_id: generateCustomerId(),
-          first_name: item['First Name'] || `First${index+1}`,
-          last_name: item['Last Name'] || `Last${index+1}`,
-          company_name: item['Company Name'] || '',
-          email: item['Email'] || '',
-          phone: item['Phone'] || '',
-          address: item['Address'] || '',
-          customer_type: item['Customer Type'] || '',
-          registration_date: item['Registration Date'] || new Date().toISOString().split('T')[0],
-          credit_limit: item['Credit Limit'] || 0,
-          is_active: item['Status']?.toLowerCase() === 'active'
-        }))
-
-        setCustomers(prev => [...prev, ...newCustomers])
-        setImportDialog(false)
-        toast.success(`Imported ${newCustomers.length} customers.`)
-      } catch (error) {
-        toast.error('Failed to process Excel file.')
-      }
-    }
-    reader.readAsArrayBuffer(file)
-  }
-
-  // Download template
-  const downloadTemplate = () => {
-    const template = [{
-      'First Name': 'John',
-      'Last Name': 'Doe',
-      'Company Name': 'Example Corp',
-      'Email': 'john@example.com',
-      'Phone': '+94 XX XXX XXXX',
-      'Address': 'Colombo',
-      'Customer Type': 'Regular',
-      'Registration Date': 'YYYY-MM-DD',
-      'Credit Limit': 10000,
-      'Status': 'Active'
-    }]
-    const worksheet = XLSX.utils.json_to_sheet(template)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'Template')
-    XLSX.writeFile(workbook, 'customer_import_template.xlsx')
-    toast.success('Template downloaded successfully.')
-  }
-
-  // Add new customer
   const handleAddCustomer = () => {
-    toast.info('Redirecting to add customer form...')
     window.location.href = '/customer/add'
   }
 
@@ -196,7 +153,7 @@ export default function ListCustomer() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">Customer List</h1>
-          <p className="text-muted-foreground">Manage your customers</p>
+          <p className="text-muted-foreground">Manage your customer database</p>
         </div>
         <Button onClick={handleAddCustomer} className="gap-2">
           <Plus className="h-4 w-4" />
@@ -210,7 +167,7 @@ export default function ListCustomer() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name, email, or type..."
+              placeholder="Search by name, email, or code..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -223,9 +180,6 @@ export default function ListCustomer() {
             <Button variant="outline" onClick={exportToPDF} className="gap-2 flex-1 sm:flex-none">
               <FileText className="h-4 w-4" /> PDF
             </Button>
-            <Button variant="outline" onClick={() => setImportDialog(true)} className="gap-2 flex-1 sm:flex-none">
-              <Upload className="h-4 w-4" /> Import
-            </Button>
           </div>
         </CardContent>
       </Card>
@@ -234,40 +188,44 @@ export default function ListCustomer() {
       <Card>
         <CardHeader>
           <CardTitle>Customers</CardTitle>
-          <CardDescription>{filteredCustomers.length} customers found</CardDescription>
+          <CardDescription>
+              {loading ? 'Loading customers...' : `${filteredCustomers.length} customers found`}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
-                  <TableHead>Customer ID</TableHead>
+                  <TableHead>Customer Code</TableHead>
+                <TableHead>Customer Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
-                <TableHead>Customer Type</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredCustomers.map((c) => (
                 <TableRow key={c.customer_id}>
+                    <TableCell className="font-mono text-xs text-muted-foreground">
+                        {c.customer_code || "-"}
+                    </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <User className="h-5 w-5 text-gray-400" />
-                      {c.first_name} {c.last_name}
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-2 rounded-full">
+                        <User className="h-4 w-4 text-blue-600" />
+                      </div>
+                      <div className="font-medium text-sm">
+                        {c.first_name} {c.last_name}
+                      </div>
                     </div>
                   </TableCell>
-                    <TableCell className="font-mono text-sm">
-                        {c.customer_id}
-                    </TableCell>
-                  <TableCell>{c.email}</TableCell>
-                  <TableCell>{c.phone || '-'}</TableCell>
-                  <TableCell>{c.customer_type || '-'}</TableCell>
+                  <TableCell className="text-sm">{c.email}</TableCell>
+                  <TableCell className="text-sm">{c.phone || '-'}</TableCell>
                   <TableCell>
-                    <Badge variant={c.is_active ? 'default' : 'secondary'}>
-                      {c.is_active ? 'Active' : 'Inactive'}
-                    </Badge>
+                      <Badge variant="outline" className="font-normal">
+                          {c.customer_type || 'Regular'}
+                      </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -294,8 +252,12 @@ export default function ListCustomer() {
             </TableBody>
           </Table>
 
-          {filteredCustomers.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">No customers found</div>
+          {!loading && filteredCustomers.length === 0 && (
+            <div className="text-center py-12">
+               <Users className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+               <h3 className="text-lg font-medium text-gray-900">No customers found</h3>
+               <p className="text-gray-500 mt-1">Try adjusting your search or add a new customer.</p>
+            </div>
           )}
         </CardContent>
       </Card>
@@ -306,14 +268,14 @@ export default function ListCustomer() {
           <DialogHeader>
             <DialogTitle>Delete Customer</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete "{deleteDialog.customer?.first_name} {deleteDialog.customer?.last_name}"? This action cannot be undone.
+              Are you sure you want to delete <b>{deleteDialog.customer?.first_name} {deleteDialog.customer?.last_name}</b>? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialog({ open: false, customer: null })}>
               Cancel
             </Button>
-            <Button variant="destructive" onClick={() => handleDelete(deleteDialog.customer?.id)}>
+            <Button variant="destructive" onClick={() => handleDelete(deleteDialog.customer?.customer_id)}>
               Delete
             </Button>
           </DialogFooter>
@@ -322,114 +284,78 @@ export default function ListCustomer() {
 
       {/* Edit Dialog */}
       <Dialog open={editDialog.open} onOpenChange={() => setEditDialog({ open: false, customer: null })}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Edit Customer</DialogTitle>
             <DialogDescription>
-              Update information for {editDialog.customer?.first_name} {editDialog.customer?.last_name}
+              Update records for {editForm.first_name} {editForm.last_name}
             </DialogDescription>
           </DialogHeader>
-            <div className="grid gap-4 py-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-first-name">First Name</Label>
-                        <Input
-                            id="edit-first-name"
-                            value={editForm.first_name || ''}
-                            onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-last-name">Last Name</Label>
-                        <Input
-                            id="edit-last-name"
-                            value={editForm.last_name || ''}
-                            onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
-                        />
-                    </div>
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
-                    <Label htmlFor="edit-customer-id">Customer ID</Label>
+                    <Label>First Name</Label>
                     <Input
-                        id="edit-customer-id"
-                        value={editForm.customer_id || ''}
-                        readOnly
-                        className="bg-muted cursor-not-allowed"
+                        value={editForm.first_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, first_name: e.target.value })}
                     />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-email">Email</Label>
-                        <Input
-                            id="edit-email"
-                            value={editForm.email || ''}
-                            onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="edit-phone">Phone</Label>
-                        <Input
-                            id="edit-phone"
-                            value={editForm.phone || ''}
-                            onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                        />
-                    </div>
-                </div>
                 <div className="space-y-2">
-                    <Label htmlFor="edit-customer-type">Customer Type</Label>
+                    <Label>Last Name</Label>
                     <Input
-                        id="edit-customer-type"
-                        value={editForm.customer_type || ''}
-                        onChange={(e) => setEditForm({ ...editForm, customer_type: e.target.value })}
+                        value={editForm.last_name || ''}
+                        onChange={(e) => setEditForm({ ...editForm, last_name: e.target.value })}
                     />
                 </div>
-                <div className="flex items-center justify-between pt-4">
-                    <Label htmlFor="edit-active">Active Status</Label>
-                    <Switch
-                        id="edit-active"
-                        checked={editForm.is_active ?? true}
-                        onCheckedChange={(checked) => setEditForm({ ...editForm, is_active: checked })}
+                <div className="space-y-2">
+                    <Label>Customer Code</Label>
+                    <Input
+                        value={editForm.customer_code || ''}
+                        onChange={(e) => setEditForm({ ...editForm, customer_code: e.target.value })}
+                        className="font-mono"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>Email</Label>
+                    <Input
+                        value={editForm.email || ''}
+                        onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>Phone</Label>
+                    <Input
+                        value={editForm.phone || ''}
+                        onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
+                    />
+                </div>
+                <div className="space-y-2">
+                    <Label>Customer Type</Label>
+                    <Select 
+                        value={editForm.customer_type || ""} 
+                        onValueChange={(value) => setEditForm({ ...editForm, customer_type: value })}
+                    >
+                        <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="Retail">Retail</SelectItem>
+                            <SelectItem value="Wholesale">Wholesale</SelectItem>
+                            <SelectItem value="Distributor">Distributor</SelectItem>
+                            <SelectItem value="Other">Other</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="col-span-2 space-y-2">
+                    <Label>Address</Label>
+                    <Input
+                        value={editForm.address || ''}
+                        onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
                     />
                 </div>
             </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditDialog({ open: false, customer: null })}>Cancel</Button>
             <Button onClick={handleUpdate}>Update Customer</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Import Dialog */}
-      <Dialog open={importDialog} onOpenChange={setImportDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Import Customers</DialogTitle>
-            <DialogDescription>Upload an Excel file to import customers. Download the template first to ensure proper formatting.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div
-              className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-              <p className="text-sm text-gray-600">Click to upload Excel file</p>
-              <p className="text-xs text-gray-500 mt-1">.xlsx, .xls files supported</p>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-            </div>
-            <div className="text-sm text-muted-foreground">
-              <Button variant="link" onClick={downloadTemplate} className="p-0 h-auto">
-                Download template file
-              </Button>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setImportDialog(false)}>Cancel</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

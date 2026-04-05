@@ -335,8 +335,8 @@ export default function ListCategory() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Category Name</TableHead>
                                 <TableHead>Category ID</TableHead>
+                                <TableHead>Category Name</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead>Created Date</TableHead>
@@ -346,14 +346,14 @@ export default function ListCategory() {
                         <TableBody>
                             {filteredCategories.map((category) => (
                                 <TableRow key={category.category_id || category.category.id }>
+                                    <TableCell className="font-mono text-sm">
+                                        {category.category_code || '-'}
+                                    </TableCell>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
                                             <Tags className="h-5 w-5 text-muted-foreground" />
                                             <span>{category.category_name || ''}</span>
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-sm">
-                                        {category.category_code || '-'}
                                     </TableCell>
                                     <TableCell className="max-w-md truncate">
                                         {category.description || '-'}

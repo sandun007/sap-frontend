@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -9,6 +10,7 @@ import { Save, X, Building2, Mail, Phone, Globe, User } from 'lucide-react'
 import axios from 'axios'
 
 export default function AddBrand() {
+    const navigate = useNavigate()
     // function format date as YYYY-MM-DD
     const formatDate = (date) => {
         const year = date.getFullYear()
@@ -57,16 +59,9 @@ export default function AddBrand() {
 
             toast.success(`Brand created successfully! ID: ${realId}`)
 
-            // Reset
-            setFormData({
-                brand_code: generateBrandId(),
-                brand_name: '',
-                contact_person: '',
-                phone: '',
-                email: '',
-                website: '',
-                created_date: formatDate(new Date())
-            })
+            setTimeout(() => {
+                navigate('/brand/list')
+            }, 1500)
         } catch (err) {
             toast.error("Failed to create brands. Check console for details.")
             console.error("Brand creation failed:", err)
@@ -100,7 +95,8 @@ export default function AddBrand() {
                 </Badge>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Card: Brand Information */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Brand Information</CardTitle>
@@ -108,7 +104,7 @@ export default function AddBrand() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <Label htmlFor="brand_name">Brand Name</Label>
+                            <Label htmlFor="brand_name">Brand Name <span className="text-red-500">*</span></Label>
                             <div className="relative">
                                 <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                 <Input
@@ -122,20 +118,30 @@ export default function AddBrand() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="contact_person">Contact Person</Label>
-                                <div className="relative">
-                                    <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        id="contact_person"
-                                        value={formData.contact_person}
-                                        onChange={(e) => handleInputChange('contact_person', e.target.value)}
-                                        placeholder="Enter contact person name"
-                                        className="pl-10"
-                                    />
-                                </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="contact_person">Contact Person</Label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                <Input
+                                    id="contact_person"
+                                    value={formData.contact_person}
+                                    onChange={(e) => handleInputChange('contact_person', e.target.value)}
+                                    placeholder="Enter contact person name"
+                                    className="pl-10"
+                                />
                             </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Right Card: Contact Details */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Contact Details</CardTitle>
+                        <CardDescription>Contact info and dates</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
                                 <Label htmlFor="phone">Phone Number</Label>
                                 <div className="relative">
@@ -150,20 +156,20 @@ export default function AddBrand() {
                                     />
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
-                            <div className="relative">
-                                <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                <Input
-                                    id="email"
-                                    type="email"
-                                    value={formData.email}
-                                    onChange={(e) => handleInputChange('email', e.target.value)}
-                                    placeholder="brand@example.com"
-                                    className="pl-10"
-                                />
+                            <div className="space-y-2">
+                                <Label htmlFor="email">Email Address</Label>
+                                <div className="relative">
+                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => handleInputChange('email', e.target.value)}
+                                        placeholder="brand@example.com"
+                                        className="pl-10"
+                                    />
+                                </div>
                             </div>
                         </div>
 
@@ -182,24 +188,24 @@ export default function AddBrand() {
                         </div>
                     </CardContent>
                 </Card>
+            </div>
 
-                {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8 pt-6 border-t">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        className="w-full sm:w-auto"
-                        onClick={handleClear}
-                    >
-                        <X className="h-4 w-4 mr-2" />
-                        Clear Form
-                    </Button>
-                    <Button type="submit" className="w-full sm:w-auto gap-2">
-                        <Save className="h-4 w-4" />
-                        Save Brand
-                    </Button>
-                </div>
-            </form>
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-3 sm:gap-4 mt-8 pt-6 border-t">
+                <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                    onClick={handleClear}
+                >
+                    <X className="h-4 w-4 mr-2" />
+                    Clear Form
+                </Button>
+                <Button onClick={handleSubmit} className="w-full sm:w-auto gap-2">
+                    <Save className="h-4 w-4" />
+                    Save Brand
+                </Button>
+            </div>
         </div>
     )
 }

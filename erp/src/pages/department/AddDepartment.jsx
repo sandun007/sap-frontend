@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -16,16 +17,29 @@ import {
 } from "@/components/ui/select"
 
 export default function AddDepartment() {
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
+        department_code: '',
         department_name: '',
         description: '',
         manager_id: '',
         branch_id: '',
         created_date: ''
     })
+    const [departmentId, setDepartmentId] = useState(generateDepartmentId())
     const [branches, setBranches] = useState([])
     const [employees, setEmployees] = useState([])
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        setFormData(prev => ({ ...prev, department_code: departmentId }))
+    }, [departmentId])
+
+    function generateDepartmentId() {
+        const timestamp = Date.now().toString().slice(-6)
+        const random = Math.random().toString(36).substr(2, 4).toUpperCase()
+        return `DEPT-${timestamp}-${random}`
+    }
 
     useEffect(() => {
         const fetchData = async () => {
@@ -70,13 +84,9 @@ export default function AddDepartment() {
 
             if (response.data.success) {
                 toast.success('Department created successfully')
-                setFormData({
-                    department_name: '',
-                    description: '',
-                    manager_id: '',
-                    branch_id: '',
-                    created_date: ''
-                })
+                setTimeout(() => {
+                    navigate('/department/list')
+                }, 1500)
             } else {
                 toast.error(response.data.message || 'Failed to create department')
             }
@@ -91,12 +101,14 @@ export default function AddDepartment() {
 
     const handleClear = () => {
         setFormData({
+            department_code: '',
             department_name: '',
             description: '',
             manager_id: '',
             branch_id: '',
             created_date: ''
         })
+        setDepartmentId(generateDepartmentId())
         toast.info('Form cleared')
     }
 
@@ -110,7 +122,9 @@ export default function AddDepartment() {
                         Create and manage departments
                     </p>
                 </div>
-                <Badge variant="secondary">Department</Badge>
+                <Badge variant="secondary" className="text-sm px-3 py-1">
+                    Department Code: {departmentId}
+                </Badge>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -122,10 +136,11 @@ export default function AddDepartment() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div>
-                            <Label>Department Name *</Label>
+                            <Label htmlFor="department_name">Department Name</Label>
                             <div className="relative">
                                 <Building className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                                 <Input
+                                    id="department_name"
                                     className="pl-10"
                                     placeholder="Department name"
                                     value={formData.department_name}

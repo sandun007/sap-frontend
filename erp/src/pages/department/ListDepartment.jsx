@@ -1,5 +1,12 @@
 import React, { useState, useRef, useEffect } from "react"
 import { Switch } from "@/components/ui/switch"
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select"
 
 import {
   Card,
@@ -60,6 +67,8 @@ export default function ListDepartment() {
   const [searchTerm, setSearchTerm] = useState("")
   const [deleteDialog, setDeleteDialog] = useState({ open: false, dept: null })
   const [editDialog, setEditDialog] = useState({ open: false, dept: null })
+  const [branches, setBranches] = useState([])
+  const [employees, setEmployees] = useState([])
   const [editForm, setEditForm] = useState({})
   const fileInputRef = useRef(null)
 
@@ -70,11 +79,17 @@ export default function ListDepartment() {
   const fetchDepartments = async () => {
     setLoading(true)
     try {
-      const response = await axios.get('/departments')
-      setDepartments(response.data.data || [])
+      const [deptRes, branchRes, empRes] = await Promise.all([
+        axios.get('/departments'),
+        axios.get('/branches'),
+        axios.get('/employees')
+      ])
+      setDepartments(deptRes.data.data || [])
+      setBranches(branchRes.data.data || [])
+      setEmployees(empRes.data.data || [])
     } catch (error) {
-      console.error('Failed to fetch departments:', error)
-      toast.error("Failed to load departments from database")
+      console.error('Failed to fetch data:', error)
+      toast.error("Failed to load departments, branches or employees")
     } finally {
       setLoading(false)
     }
@@ -88,6 +103,7 @@ export default function ListDepartment() {
 
     return (
       d.department_name.toLowerCase().includes(term) ||
+      (d.department_code || "").toLowerCase().includes(term) ||
       d.department_id.toString().includes(term) ||
       branchName.includes(term) ||
       managerName.includes(term)
@@ -134,7 +150,14 @@ export default function ListDepartment() {
 
   /* ---------------- EXPORT ---------------- */
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredDepartments)
+    const dataForExport = filteredDepartments.map(d => ({
+      'Department Name': d.department_name,
+      'Code': d.department_code || d.department_id,
+      'Branch': d.branch?.branch_name || "-",
+      'Manager': d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
+      'Status': d.is_active ? "Active" : "Inactive"
+    }))
+    const worksheet = XLSX.utils.json_to_sheet(dataForExport)
     const workbook = XLSX.utils.book_new()
     XLSX.utils.book_append_sheet(workbook, worksheet, "Departments")
     XLSX.writeFile(workbook, "departments.xlsx")
@@ -147,10 +170,10 @@ export default function ListDepartment() {
 
     doc.autoTable({
       startY: 30,
-      head: [["ID", "Name", "Branch", "Manager", "Status"]],
+      head: [["Department Name", "Code", "Branch", "Manager", "Status"]],
       body: filteredDepartments.map((d) => [
-        d.department_id,
         d.department_name,
+        d.department_code || d.department_id,
         d.branch?.branch_name || "-",
         d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
         d.is_active ? "Active" : "Inactive",
@@ -188,7 +211,7 @@ export default function ListDepartment() {
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search by name or ID..."
+              placeholder="Search by name, code or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -217,17 +240,19 @@ export default function ListDepartment() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Department</TableHead>
-                  <TableHead>Department ID</TableHead>
+                  <TableHead>Department Code</TableHead>
+                <TableHead>Department Name</TableHead>
                 <TableHead>Branch</TableHead>
                 <TableHead>Manager</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredDepartments.map((dept) => (
                 <TableRow key={dept.id}>
+                    <TableCell className="font-mono text-sm text-muted-foreground">
+                        {dept.department_code || "-"}
+                    </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <Building className="h-5 w-5 text-muted-foreground" />
@@ -236,9 +261,6 @@ export default function ListDepartment() {
                       </div>
                     </div>
                   </TableCell>
-                    <TableCell className="font-mono text-sm text-muted-foreground">
-                        {dept.department_id}
-                    </TableCell>
                   <TableCell>
                     <GitBranch className="inline h-4 w-4 mr-1" />
                     {dept.branch?.branch_name || "-"}
@@ -246,11 +268,6 @@ export default function ListDepartment() {
                   <TableCell>
                     <User className="inline h-4 w-4 mr-1" />
                     {dept.manager ? `${dept.manager.first_name} ${dept.manager.last_name}` : "-"}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={dept.is_active ? "default" : "secondary"}>
-                      {dept.is_active ? "Active" : "Inactive"}
-                    </Badge>
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
@@ -328,11 +345,13 @@ export default function ListDepartment() {
               {/* Department ID */}
 
                 <div className="space-y-2">
-                    <Label>Department ID</Label>
+                    <Label>Department Code</Label>
                     <Input
-                        value={editForm.department_id || ""}
-                        readOnly
-                        className="bg-muted cursor-not-allowed font-mono"
+                        value={editForm.department_code || ""}
+                        onChange={(e) =>
+                          setEditForm({ ...editForm, department_code: e.target.value })
+                        }
+                        className="font-mono"
                     />
                 </div>
 
@@ -352,41 +371,45 @@ export default function ListDepartment() {
 
               {/* Branch */}
               <div>
-                <Label>Branch</Label>
-                <Input
-                  value={editForm.branch_id || ""}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, branch_id: e.target.value })
-                  }
-                />
+                  <Label>Branch</Label>
+                  <Select 
+                      value={editForm.branch_id?.toString()} 
+                      onValueChange={(value) => setEditForm({ ...editForm, branch_id: value })}
+                  >
+                      <SelectTrigger id="edit-branch" className="w-full">
+                          <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {branches.map((branch) => (
+                              <SelectItem key={branch.branch_id} value={branch.branch_id.toString()}>
+                                  {branch.branch_name}
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
               </div>
 
               {/* Manager */}
               <div>
-                <Label>Manager</Label>
-                <Input
-                  value={editForm.manager_id || ""}
-                  onChange={(e) =>
-                    setEditForm({ ...editForm, manager_id: e.target.value })
-                  }
-                />
+                  <Label>Manager</Label>
+                  <Select 
+                      value={editForm.manager_id?.toString()} 
+                      onValueChange={(value) => setEditForm({ ...editForm, manager_id: value })}
+                  >
+                      <SelectTrigger id="edit-manager" className="w-full">
+                          <SelectValue placeholder="Select manager" />
+                      </SelectTrigger>
+                      <SelectContent>
+                          {employees.map((emp) => (
+                              <SelectItem key={emp.employee_id} value={emp.employee_id.toString()}>
+                                  {emp.first_name} {emp.last_name}
+                              </SelectItem>
+                          ))}
+                      </SelectContent>
+                  </Select>
               </div>
 
-              {/* Status */}
-              <div className="flex items-center justify-between">
-                <Label>Status</Label>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm">
-                    {editForm.is_active ? "Active" : "Inactive"}
-                  </span>
-                  <Switch
-                    checked={!!editForm.is_active}
-                    onCheckedChange={(value) =>
-                      setEditForm({ ...editForm, is_active: value })
-                    }
-                  />
-                </div>
-              </div>
+              {/* Branch */}
             </div>
 
             <DialogFooter>

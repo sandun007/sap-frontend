@@ -9,8 +9,14 @@ import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { ScanBarcode, Upload, Camera, Package, Save, X, QrCode } from 'lucide-react'
+import axios from 'axios'
+import { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import QRCode from 'react-qr-code'
+import { BrowserMultiFormatReader } from '@zxing/browser'
 
 export default function AddProduct() {
+  const navigate = useNavigate()
   const [formData, setFormData] = useState({
     product_name: '',
     description: '',
@@ -23,16 +29,27 @@ export default function AddProduct() {
     category_id: '',
     subcategory_id: '',
     brand_id: '',
-    supplier_id: ''
+    supplier_id: '',
+    branch_id: '',
+    initial_stock: '0',
+    minimum_stock: '10'
   })
 
   const [productId, setProductId] = useState(generateProductId())
   const [qrCode, setQrCode] = useState('')
   const [productImage, setProductImage] = useState(null)
+  
+  const [categories, setCategories] = useState([])
+  const [subcategories, setSubcategories] = useState([])
+  const [brands, setBrands] = useState([])
+  const [suppliers, setSuppliers] = useState([])
+  const [loading, setLoading] = useState(false)
+  const [branches, setBranches] = useState([])
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
+  const readerRef = useRef(null)
 
   // Generate product ID
   function generateProductId() {
@@ -41,33 +58,29 @@ export default function AddProduct() {
     return `PROD-${timestamp}-${random}`
   }
 
-  // Mock data for dropdowns
-  const categories = [
-    { id: 1, name: 'Electronics' },
-    { id: 2, name: 'Clothing' },
-    { id: 3, name: 'Food & Beverages' },
-    { id: 4, name: 'Home & Garden' }
-  ]
+  useEffect(() => {
+    fetchInitialData()
+  }, [])
 
-  const subcategories = [
-    { id: 1, name: 'Mobile Phones', category_id: 1 },
-    { id: 2, name: 'Laptops', category_id: 1 },
-    { id: 3, name: 'Men Clothing', category_id: 2 },
-    { id: 4, name: 'Women Clothing', category_id: 2 }
-  ]
-
-  const brands = [
-    { id: 1, name: 'Samsung' },
-    { id: 2, name: 'Apple' },
-    { id: 3, name: 'Nike' },
-    { id: 4, name: 'Adidas' }
-  ]
-
-  const suppliers = [
-    { id: 1, name: 'Supplier A' },
-    { id: 2, name: 'Supplier B' },
-    { id: 3, name: 'Supplier C' }
-  ]
+  const fetchInitialData = async () => {
+    try {
+      const [catRes, subRes, brandRes, supRes, branchRes] = await Promise.all([
+        axios.get('/categories'),
+        axios.get('/subcategories'),
+        axios.get('/brands'),
+        axios.get('/suppliers'),
+        axios.get('/branches')
+      ])
+      setCategories(catRes.data.data || [])
+      setSubcategories(subRes.data.data || [])
+      setBrands(brandRes.data.data || [])
+      setSuppliers(supRes.data.data || [])
+      setBranches(branchRes.data.data || [])
+    } catch (error) {
+      console.error('Failed to fetch initial data:', error)
+      toast.error("Failed to load initial data")
+    }
+  }
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -93,33 +106,30 @@ export default function AddProduct() {
   // Barcode Scanner Functionality
   const startBarcodeScanner = async () => {
     setShowBarcodeScanner(true)
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        video: { facingMode: 'environment' } 
-      })
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream
-      }
-    } catch (error) {
-      console.error('Error accessing camera:', error)
-      toast.error("Cannot access camera. Please check permissions.")
-    }
+    const codeReader = new BrowserMultiFormatReader()
+    readerRef.current = codeReader
+
+    setTimeout(() => {
+        if (!videoRef.current) return
+        codeReader.decodeFromVideoDevice(null, videoRef.current, (result, err) => {
+            if (result) {
+                handleInputChange('barcode', result.getText())
+                toast.success(`Scanned: ${result.getText()}`)
+                stopBarcodeScanner()
+            }
+        }).catch(err => {
+            console.error('Error accessing camera for scanning:', err)
+            toast.error("Cannot access camera. Please check permissions.")
+        })
+    }, 500)
   }
 
   const stopBarcodeScanner = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const tracks = videoRef.current.srcObject.getTracks()
-      tracks.forEach(track => track.stop())
+    if (readerRef.current) {
+        readerRef.current.reset()
+        readerRef.current = null
     }
     setShowBarcodeScanner(false)
-  }
-
-  const captureBarcode = () => {
-    // Simulate barcode capture
-    const simulatedBarcode = Math.random().toString().substr(2, 12)
-    handleInputChange('barcode', simulatedBarcode)
-    stopBarcodeScanner()
-    toast.success(`Barcode captured: ${simulatedBarcode}`)
   }
 
   // Camera Functionality
@@ -164,41 +174,66 @@ export default function AddProduct() {
     toast.success("QR Code generated successfully")
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
     
     // Basic validation
-    if (!formData.product_name || !formData.unit_price || !formData.cost_price) {
+    if (!formData.product_name || !formData.unit_price ) {
       toast.error("Please fill in all required fields")
       return
     }
 
-    const productData = {
-      product_id: productId,
-      ...formData
-    }
+    setLoading(true)
+    try {
+      const payload = {
+        product_name: formData.product_name,
+        product_code: productId,
+        description: formData.description,
+        price: parseFloat(formData.unit_price),
+        unit: 'pcs', 
+        status: formData.is_active ? 'active' : 'inactive',
+        brand_id: formData.brand_id,
+        subcategory_id: formData.subcategory_id,
+        barcode: formData.barcode,
+        cost_price: parseFloat(formData.cost_price),
+        weight: formData.weight,
+        dimensions: formData.dimensions,
+        supplier_id: formData.supplier_id
+      }
 
-    console.log('Product Data:', productData)
-    toast.success("Product added successfully!")
-    
-    // Reset form
-    setFormData({
-      product_name: '',
-      description: '',
-      unit_price: '',
-      cost_price: '',
-      barcode: '',
-      weight: '',
-      dimensions: '',
-      is_active: true,
-      category_id: '',
-      subcategory_id: '',
-      brand_id: '',
-      supplier_id: ''
-    })
-    setProductId(generateProductId())
-    setProductImage(null)
-    setQrCode('')
+      const response = await axios.post('/products', payload)
+      
+      if (response.data.success) {
+        const newProduct = response.data.data
+        
+        // If initial stock is specified and branch is selected, create stock entry
+        if (formData.branch_id && formData.initial_stock) {
+          try {
+            await axios.post('/stocks', {
+              product_id: newProduct.product_id,
+              branch_id: parseInt(formData.branch_id),
+              brand_id: parseInt(formData.brand_id),
+              category_id: parseInt(formData.category_id),
+              subcategory_id: parseInt(formData.subcategory_id),
+              product_name: formData.product_name,
+              quantity: parseInt(formData.initial_stock),
+              minimum_stock_level: parseInt(formData.minimum_stock) || 10
+            })
+          } catch (stockError) {
+            console.error('Failed to create initial stock:', stockError)
+            toast.warning("Product created, but failed to set initial stock")
+          }
+        }
+
+        toast.success("Product added successfully!")
+        navigate('/products/list')
+      }
+    } catch (error) {
+      console.error('Failed to save product:', error)
+      toast.error(error.response?.data?.message || "Failed to save product")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -216,23 +251,24 @@ export default function AddProduct() {
 
       {/* Barcode Scanner Modal */}
       {showBarcodeScanner && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white p-6 rounded-xl max-w-md w-full shadow-2xl">
             <h3 className="text-lg font-bold mb-4">Scan Barcode</h3>
-            <video 
-              ref={videoRef} 
-              autoPlay 
-              playsInline 
-              className="w-full h-64 bg-black rounded"
-            />
-            <div className="flex gap-2 mt-4">
-              <Button onClick={captureBarcode} className="flex-1">
-                Capture Barcode
-              </Button>
-              <Button onClick={stopBarcodeScanner} variant="outline">
-                <X className="h-4 w-4" />
-              </Button>
+            <div className="relative overflow-hidden rounded-lg bg-black aspect-square max-h-64 flex items-center justify-center">
+                <video 
+                ref={videoRef} 
+                autoPlay 
+                playsInline 
+                className="w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 border-4 border-green-500/50 m-8 rounded-xl pointer-events-none shadow-[0_0_0_9999px_rgba(0,0,0,0.5)]"></div>
             </div>
+            <p className="text-sm text-center text-muted-foreground mt-4 mb-2">
+               Point your camera at a barcode or QR code
+            </p>
+            <Button onClick={stopBarcodeScanner} variant="outline" className="w-full mt-2">
+               Cancel Scanning
+            </Button>
           </div>
         </div>
       )}
@@ -405,8 +441,8 @@ export default function AddProduct() {
                     </SelectTrigger>
                     <SelectContent>
                       {categories.map((category) => (
-                        <SelectItem key={category.id} value={category.id.toString()}>
-                          {category.name}
+                        <SelectItem key={category.category_id} value={category.category_id.toString()}>
+                          {category.category_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -421,10 +457,10 @@ export default function AddProduct() {
                     </SelectTrigger>
                     <SelectContent>
                       {subcategories
-                        .filter(sub => sub.category_id === parseInt(formData.category_id))
+                        .filter(sub => String(sub.category_id) === String(formData.category_id))
                         .map((subcategory) => (
-                          <SelectItem key={subcategory.id} value={subcategory.id.toString()}>
-                            {subcategory.name}
+                          <SelectItem key={subcategory.subcategory_id} value={subcategory.subcategory_id.toString()}>
+                            {subcategory.subcategory_name}
                           </SelectItem>
                         ))}
                     </SelectContent>
@@ -439,8 +475,8 @@ export default function AddProduct() {
                     </SelectTrigger>
                     <SelectContent>
                       {brands.map((brand) => (
-                        <SelectItem key={brand.id} value={brand.id.toString()}>
-                          {brand.name}
+                        <SelectItem key={brand.brand_id} value={brand.brand_id.toString()}>
+                          {brand.brand_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -455,12 +491,41 @@ export default function AddProduct() {
                     </SelectTrigger>
                     <SelectContent>
                       {suppliers.map((supplier) => (
-                        <SelectItem key={supplier.id} value={supplier.id.toString()}>
-                          {supplier.name}
+                        <SelectItem key={supplier.supplier_id} value={supplier.supplier_id.toString()}>
+                          {supplier.supplier_name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="branch_id">Initial Stock Branch *</Label>
+                    <Select value={formData.branch_id} onValueChange={(value) => handleInputChange('branch_id', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select branch" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {branches.map((branch) => (
+                          <SelectItem key={branch.branch_id} value={branch.branch_id.toString()}>
+                            {branch.branch_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="initial_stock">Initial Quantity *</Label>
+                    <Input
+                      id="initial_stock"
+                      type="number"
+                      value={formData.initial_stock}
+                      onChange={(e) => handleInputChange('initial_stock', e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -529,10 +594,8 @@ export default function AddProduct() {
                   <CardTitle>QR Code</CardTitle>
                 </CardHeader>
                 <CardContent className="text-center">
-                  <div className="bg-gray-100 p-4 rounded-lg inline-block">
-                    <div className="w-32 h-32 bg-white flex items-center justify-center border">
-                      <span className="text-xs break-all">{qrCode}</span>
-                    </div>
+                  <div className="bg-white p-3 rounded-xl inline-block border border-gray-100 shadow-sm">
+                    <QRCode value={qrCode} size={150} level="H" />
                   </div>
                   <p className="text-sm text-muted-foreground mt-2">Scan this QR code for product details</p>
                 </CardContent>
@@ -565,9 +628,9 @@ export default function AddProduct() {
           }}>
             Clear
           </Button>
-          <Button type="submit" className="w-full sm:w-auto gap-2">
+          <Button type="submit" className="w-full sm:w-auto gap-2" disabled={loading}>
             <Save className="h-4 w-4" />
-            Save Product
+            {loading ? "Saving..." : "Save Product"}
           </Button>
         </div>
       </form>

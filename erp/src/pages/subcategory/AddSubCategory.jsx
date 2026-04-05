@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Card,
     CardContent,
@@ -24,6 +25,7 @@ import {
 import { format } from 'date-fns'
 
 export default function AddSubCategory() {
+    const navigate = useNavigate();
     const generateSubCategoryCode = () => {
         const timestamp = Date.now().toString().slice(-6);
         const random = Math.random().toString(36).substr(2, 4).toUpperCase();
@@ -74,14 +76,9 @@ export default function AddSubCategory() {
             await axios.post('/subcategories', formData);
             toast.success('Subcategory created successfully!');
 
-            const newCode = generateSubCategoryCode();
-            setFormData({
-                subcategory_code: newCode,
-                subcategory_name: '',
-                description: '',
-                category_id: '',
-                created_date: format(new Date(), 'yyyy-MM-dd'),
-            });
+            setTimeout(() => {
+                navigate('/subcategory/list')
+            }, 1500)
         } catch (error) {
             console.error(error);
             const msg =
@@ -159,15 +156,6 @@ export default function AddSubCategory() {
                                     required
                                 />
                             </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Subcategory Code</Label>
-                            <Input
-                                value={formData.subcategory_code}
-                                readOnly
-                                className="bg-muted cursor-not-allowed"
-                            />
                         </div>
                     </CardContent>
                 </Card>

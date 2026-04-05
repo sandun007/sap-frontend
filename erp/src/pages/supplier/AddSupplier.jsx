@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,6 +12,7 @@ import axios from 'axios'
 import { format } from 'date-fns'
 
 export default function AddSupplier() {
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
         supplier_id: generateSupplierCode(),
         supplier_name: '',
@@ -52,17 +54,9 @@ export default function AddSupplier() {
 
             toast.success(`Supplier created successfully! ID: ${realId}`)
 
-            setFormData({
-                supplier_id: generateSupplierCode(),
-                supplier_name: '',
-                contact_person: '',
-                phone: '',
-                email: '',
-                address: '',
-                tax_id: '',
-                payment_terms: '',
-                created_date: format(new Date(), 'yyyy-MM-dd'),
-            })
+            setTimeout(() => {
+                navigate('/supplier/list')
+            }, 1500)
         } catch (err) {
             toast.error("Failed to create supplier. Check console for details.")
             console.error("Supplier creation failed:", err)

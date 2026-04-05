@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +21,7 @@ import {
 } from "@/components/ui/select"
 
 export default function AddEmployee() {
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
         employee_code:generateEmployeeId(),
         first_name: '',
@@ -120,23 +122,9 @@ export default function AddEmployee() {
             const realId = newEmployee?.employee_id || '—'
 
             toast.success(`Employee created successfully! ID: ${realId}`)
-            setFormData({
-               employee_code:generateEmployeeId(),
-                first_name: '',
-                last_name: '',
-                email: '',
-                phone_num1: '',
-                phone_num2: '',
-                nic_num: '',
-                hire_date: '',
-                position: '',
-                salary: '',
-                address: '',
-                date_of_birth: '',
-                department_id: '',
-                is_active: '1',
-                password: '',
-        })
+            setTimeout(() => {
+                navigate('/employee/list')
+            }, 1500)
         } catch (err) {
             toast.error("Failed to create employee. Check console for details.")
             console.error("Employee creation failed:", err)

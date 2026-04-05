@@ -304,10 +304,11 @@ export default function ListBranch() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Branch</TableHead>
                                 <TableHead>Branch Code</TableHead>
+                                <TableHead>Branch</TableHead>
                                 <TableHead>Address</TableHead>
-                                <TableHead>Phone</TableHead>
+                                <TableHead>Phone 01</TableHead>
+                                <TableHead>Phone 02</TableHead>
                                 <TableHead>Manager</TableHead>
                                 <TableHead>Status</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
@@ -315,7 +316,8 @@ export default function ListBranch() {
                         </TableHeader>
                         <TableBody>
                             {filteredBranches.map((branch) => (
-                                <TableRow key={branch.id}>
+                                <TableRow key={branch.branch_id}>
+                                    <TableCell className="font-mono text-sm">{branch.branch_code}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 bg-muted rounded-lg flex items-center justify-center">
@@ -324,9 +326,9 @@ export default function ListBranch() {
                                             <div className="font-medium">{branch.branch_name}</div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-sm">{branch.branch_code}</TableCell>
                                     <TableCell className="max-w-xs truncate">{branch.address || '-'}</TableCell>
                                     <TableCell>{branch.phone_num1 || '-'}</TableCell>
+                                    <TableCell>{branch.phone_num2 || '-'}</TableCell>
                                     <TableCell>{branch.manager ? `${branch.manager.first_name} ${branch.manager.last_name}` : '-'}</TableCell>
                                     <TableCell>
                                         <Badge variant={branch.is_active ? "default" : "secondary"}>
@@ -402,11 +404,11 @@ export default function ListBranch() {
                     <div className="grid gap-4 py-4">
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label htmlFor="edit-branch-id">Branch ID</Label>
+                                <Label htmlFor="edit-branch-code">Branch Code</Label>
                                 <Input
-                                    id="edit-branch-id"
-                                    value={editForm.branch_id || ''}
-                                    onChange={(e) => setEditForm({ ...editForm, branch_id: e.target.value })}
+                                    id="edit-branch-code"
+                                    value={editForm.branch_code || ''}
+                                    onChange={(e) => setEditForm({ ...editForm, branch_code: e.target.value })}
                                 />
                             </div>
                             <div className="space-y-2">
@@ -427,14 +429,22 @@ export default function ListBranch() {
                             />
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="edit-phone">Phone</Label>
-                                <Input
-                                    id="edit-phone"
-                                    value={editForm.phone || ''}
-                                    onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })}
-                                />
-                            </div>
+                             <div className="space-y-2">
+                                 <Label htmlFor="edit-phone1">Phone 01</Label>
+                                 <Input
+                                     id="edit-phone1"
+                                     value={editForm.phone_num1 || ''}
+                                     onChange={(e) => setEditForm({ ...editForm, phone_num1: e.target.value })}
+                                 />
+                             </div>
+                             <div className="space-y-2">
+                                 <Label htmlFor="edit-phone2">Phone 02</Label>
+                                 <Input
+                                     id="edit-phone2"
+                                     value={editForm.phone_num2 || ''}
+                                     onChange={(e) => setEditForm({ ...editForm, phone_num2: e.target.value })}
+                                 />
+                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="edit-email">Email</Label>
                                 <Input

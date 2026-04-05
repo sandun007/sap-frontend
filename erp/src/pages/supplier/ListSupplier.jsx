@@ -360,8 +360,8 @@ export default function ListSupplier() {
                     <Table>
                         <TableHeader>
                             <TableRow>
+                                <TableHead>Supplier Code</TableHead>
                                 <TableHead>Supplier Name</TableHead>
-                                <TableHead>Supplier ID</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Phone</TableHead>
                                 <TableHead>Email</TableHead>
@@ -374,14 +374,14 @@ export default function ListSupplier() {
                         <TableBody>
                             {currentSuppliers.map((supplier) => (
                                 <TableRow key={supplier.supplier_id}>
+                                    <TableCell className="font-mono text-sm">
+                                        {supplier.supplier_id}
+                                    </TableCell>
                                     <TableCell className="font-medium">
                                         <div className="flex items-center gap-3">
                                             <Building2 className="h-5 w-5 text-muted-foreground" />
                                             <span>{supplier.supplier_name}</span>
                                         </div>
-                                    </TableCell>
-                                    <TableCell className="font-mono text-sm">
-                                        {supplier.supplier_id}
                                     </TableCell>
                                     <TableCell>{supplier.contact_person || '-'}</TableCell>
                                     <TableCell>{supplier.phone || '-'}</TableCell>

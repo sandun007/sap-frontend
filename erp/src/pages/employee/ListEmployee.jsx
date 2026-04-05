@@ -300,8 +300,8 @@ export default function ListEmployee() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Employee ID</TableHead>
+                                <TableHead>Employee Code</TableHead>
+                                <TableHead>Employee Name</TableHead>
                                 <TableHead>Position</TableHead>
                                 <TableHead>Department</TableHead>
                                 <TableHead>Join Date</TableHead>
@@ -312,6 +312,7 @@ export default function ListEmployee() {
                         <TableBody>
                             {filteredEmployees.map((emp) => (
                                 <TableRow key={emp.id}>
+                                    <TableCell className="font-mono text-sm">{emp.employee_code}</TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-3">
                                             <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
@@ -325,7 +326,6 @@ export default function ListEmployee() {
                                             </div>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="font-mono text-sm">{emp.employee_code}</TableCell>
                                     <TableCell>{emp.position}</TableCell>
                                     <TableCell>{emp.department?.department_name || 'N/A'}</TableCell>
                                     <TableCell>{new Date(emp.hire_date).toLocaleDateString()}</TableCell>

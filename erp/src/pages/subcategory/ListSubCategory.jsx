@@ -221,8 +221,8 @@ export default function ListSubCategories() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Name</TableHead>
                                 <TableHead>Code</TableHead>
+                                <TableHead>Name</TableHead>
                                 <TableHead>Parent Category</TableHead>
                                 <TableHead>Description</TableHead>
                                 <TableHead>Created</TableHead>
@@ -232,10 +232,10 @@ export default function ListSubCategories() {
                         <TableBody>
                             {filteredSubcategories.map(sub => (
                                 <TableRow key={sub.subcategory_id}>
-                                    <TableCell className="font-medium">{sub.subcategory_name}</TableCell>
                                     <TableCell>
                                         {sub.subcategory_code || '-'}
                                     </TableCell>
+                                    <TableCell className="font-medium">{sub.subcategory_name}</TableCell>
                                     <TableCell>{sub.category?.category_name || '-'}</TableCell>
                                     <TableCell className="max-w-xs truncate">
                                         {sub.description || '-'}

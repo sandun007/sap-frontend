@@ -347,8 +347,8 @@ export default function ListBrand() {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Brand</TableHead>
                                 <TableHead>Brand Code</TableHead>
+                                <TableHead>Brand</TableHead>
                                 <TableHead>Contact Person</TableHead>
                                 <TableHead>Email</TableHead>
                                 <TableHead>Web Site</TableHead>
@@ -361,14 +361,13 @@ export default function ListBrand() {
                         <TableBody>
                             {filteredBrands.map((brand) => (
                                 <TableRow key={brand.id || brand.brand_id}>
-                                    <TableCell>
-                                        <div className="font-medium">
-                                            <div className="h-5 w-5 text-muted-foreground"/>
-                                            <span>{brand.brand_name}</span>
-                                        </div>
-                                    </TableCell>
                                     <TableCell className="font-mono text-sm">
                                         {brand.brand_code || '-'}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="font-medium">
+                                            <span>{brand.brand_name}</span>
+                                        </div>
                                     </TableCell>
                                     <TableCell>{brand.contact_person || '-'}</TableCell>
                                     <TableCell>{brand.email || '-'}</TableCell>

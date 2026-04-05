@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,10 +18,13 @@ import {
 } from "@/components/ui/select"
 
 export default function AddBranch() {
+    const navigate = useNavigate()
     const [formData, setFormData] = useState({
+        branch_code: '',
         branch_name: '',
         address: '',
-        phone: '',
+        phone_num1: '',
+        phone_num2: '',
         email: '',
         manager_id: '',
         opening_date: '',
@@ -30,6 +34,10 @@ export default function AddBranch() {
     const [branchId, setBranchId] = useState(generateBranchId())
     const [employees, setEmployees] = useState([])
     const [loading, setLoading] = useState(false)
+
+    useEffect(() => {
+        setFormData(prev => ({ ...prev, branch_code: branchId }))
+    }, [branchId])
 
     useEffect(() => {
         const fetchEmployees = async () => {
@@ -77,16 +85,9 @@ export default function AddBranch() {
 
             if (response.data.success) {
                 toast.success("Branch created successfully")
-                setFormData({
-                    branch_name: '',
-                    address: '',
-                    phone: '',
-                    email: '',
-                    manager_id: '',
-                    opening_date: '',
-                    is_active: true
-                })
-                setBranchId(generateBranchId())
+                setTimeout(() => {
+                    navigate('/branch/list')
+                }, 1500)
             } else {
                 toast.error(response.data.message || "Failed to create branch")
             }
@@ -101,9 +102,11 @@ export default function AddBranch() {
 
     const handleClear = () => {
         setFormData({
+            branch_code: '',
             branch_name: '',
             address: '',
-            phone: '',
+            phone_num1: '',
+            phone_num2: '',
             email: '',
             manager_id: '',
             opening_date: '',
@@ -164,18 +167,34 @@ export default function AddBranch() {
                                 </div>
                             </div>
 
-                            <div>
-                                <Label htmlFor="phone">Phone</Label>
-                                <div className="relative">
-                                    <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                                    <Input
-                                        id="phone"
-                                        className="pl-10"
-                                        value={formData.phone}
-                                        onChange={e => handleInputChange('phone', e.target.value)}
-                                        placeholder="+94 XX XXX XXXX"
-                                        maxLength={20}
-                                    />
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <Label htmlFor="phone_num1">Phone 01</Label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="phone_num1"
+                                            className="pl-10"
+                                            value={formData.phone_num1}
+                                            onChange={e => handleInputChange('phone_num1', e.target.value)}
+                                            placeholder="+94 XX XXX XXXX"
+                                            maxLength={20}
+                                        />
+                                    </div>
+                                </div>
+                                <div>
+                                    <Label htmlFor="phone_num2">Phone 02</Label>
+                                    <div className="relative">
+                                        <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                                        <Input
+                                            id="phone_num2"
+                                            className="pl-10"
+                                            value={formData.phone_num2}
+                                            onChange={e => handleInputChange('phone_num2', e.target.value)}
+                                            placeholder="+94 XX XXX XXXX"
+                                            maxLength={20}
+                                        />
+                                    </div>
                                 </div>
                             </div>
                         </CardContent>
