@@ -38,7 +38,7 @@ import { toast } from "sonner"
 import axios from "axios"
 import * as XLSX from "xlsx"
 import jsPDF from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 import {
   Plus,
   Search,
@@ -134,32 +134,50 @@ export default function ListDepartment() {
 
   /* ---------------- EXPORT ---------------- */
   const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredDepartments)
-    const workbook = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Departments")
-    XLSX.writeFile(workbook, "departments.xlsx")
-    toast.success("Exported to Excel")
-  }
+  const data = filteredDepartments.map((d) => ({
+    Department_ID: d.department_id,
+    Department_Name: d.department_name,
+    Branch: d.branch?.branch_name || "-",
+    Manager: d.manager
+      ? `${d.manager.first_name} ${d.manager.last_name}`
+      : "-",
+    Status: d.is_active ? "Active" : "Inactive",
+  }))
+
+  const worksheet = XLSX.utils.json_to_sheet(data)
+  const workbook = XLSX.utils.book_new()
+  XLSX.utils.book_append_sheet(workbook, worksheet, "Departments")
+
+  XLSX.writeFile(workbook, "departments.xlsx")
+
+  toast.success("Exported to Excel")
+}
 
   const exportToPDF = () => {
-    const doc = new jsPDF()
-    doc.text("Department List", 14, 20)
+  const doc = new jsPDF()
 
-    doc.autoTable({
-      startY: 30,
-      head: [["ID", "Name", "Branch", "Manager", "Status"]],
-      body: filteredDepartments.map((d) => [
-        d.department_id,
-        d.department_name,
-        d.branch?.branch_name || "-",
-        d.manager ? `${d.manager.first_name} ${d.manager.last_name}` : "-",
-        d.is_active ? "Active" : "Inactive",
-      ]),
-    })
+  doc.text("Department List", 14, 15)
 
-    doc.save("departments.pdf")
-    toast.success("PDF generated")
-  }
+  const tableData = filteredDepartments.map((d) => [
+    d.department_id,
+    d.department_name,
+    d.branch?.branch_name || "-",
+    d.manager
+      ? `${d.manager.first_name} ${d.manager.last_name}`
+      : "-",
+    d.is_active ? "Active" : "Inactive",
+  ])
+
+  autoTable(doc, {
+    head: [["ID", "Name", "Branch", "Manager", "Status"]],
+    body: tableData,
+    startY: 20,
+  })
+
+  doc.save("departments.pdf")
+
+  toast.success("PDF generated")
+}
 
   /* ---------------- ADD ---------------- */
   const handleAddDepartment = () => {
