@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,21 +27,23 @@ export default function AddBank() {
     }
 
     function generateBankCode(banks) {
-    if (!banks || banks.length === 0) {
-        return "BANK-0001";
+        if (!banks || banks.length === 0) {
+            return "BANK-0001";
+        }
+
+        const numbers = banks.map(b => {
+            const match = b.bank_code?.match(/BANK-(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        });
+
+        const max = Math.max(...numbers);
+        const next = max + 1;
+
+        return `BANK-${String(next).padStart(4, "0")}`;
     }
 
-    const lastCode = banks[banks.length - 1]?.bank_code;
-
-    const lastNumber = parseInt(lastCode?.split("-")[1] || "0");
-
-    const nextNumber = lastNumber + 1;
-
-    return `BANK-${String(nextNumber).padStart(4, "0")}`;
-}
-
     const initialState = {
-        bank_code: generateBankCode(),
+        bank_code: "BANK-0001",
         bank_name:'',
         branch_name:'',
         account_number:'',
@@ -49,16 +51,39 @@ export default function AddBank() {
         created_date: formatDate(new Date())
     }
 
-    const [formData,setFormData] = useState(initialState)
+    const [banks, setBanks] = useState([])
+    const [formData, setFormData] = useState(initialState)
 
-    const handleInputChange=(field,value)=>{
-        setFormData(prev=>({
+    // Fetch existing banks when component mounts
+    useEffect(() => {
+        fetchBanks()
+    }, [])
+
+    const fetchBanks = async () => {
+        try {
+            const response = await axios.get('/banks') // Adjust endpoint as needed
+            const banksList = response.data?.data || response.data || []
+            setBanks(banksList)
+            
+            // Generate next code based on existing banks
+            setFormData(prev => ({
+                ...prev,
+                bank_code: generateBankCode(banksList)
+            }))
+        } catch (error) {
+            console.error('Error fetching banks:', error)
+            toast.error('Failed to load existing banks')
+        }
+    }
+
+    const handleInputChange = (field, value) => {
+        setFormData(prev => ({
             ...prev,
-            [field]:value
+            [field]: value
         }))
     }
 
-    const handleSubmit = async(e)=>{
+    const handleSubmit = async (e) => {
         e.preventDefault()
 
         if(!formData.bank_name){
@@ -76,221 +101,203 @@ export default function AddBank() {
             return
         }
 
-        try{
-
-            const response = await axios.post('/banks',formData)
+        try {
+            const response = await axios.post('/banks', formData)
 
             const newBank = response.data?.data || response.data
-
             const realId = newBank?.bank_id || newBank?.id || '—'
 
             toast.success(`Bank created successfully! ID: ${realId}`)
 
+            // Update banks with new bank
+            const updatedBanks = [...banks, newBank]
+            setBanks(updatedBanks)
+
+            // Reset form with next code
             setFormData({
-                ...initialState,
-                bank_code:generateBankCode()
+                bank_code: generateBankCode(updatedBanks),
+                bank_name: '',
+                branch_name: '',
+                account_number: '',
+                account_holder_name: '',
+                created_date: formatDate(new Date())
             })
 
-        }catch(error){
+        } catch(error){
             console.error(error)
             toast.error('Failed to create bank')
         }
     }
 
-    const handleClear=()=>{
+    const handleClear = () => {
         setFormData({
-            ...initialState,
-            bank_code:generateBankCode()
+            bank_code: generateBankCode(banks),
+            bank_name: '',
+            branch_name: '',
+            account_number: '',
+            account_holder_name: '',
+            created_date: formatDate(new Date())
         })
 
         toast.info('Form cleared')
     }
 
-return(
-<div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+    return (
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
 
-{/* Header */}
-<div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+                <div>
+                    <h1 className="text-2xl sm:text-3xl font-bold">
+                        Add New Bank
+                    </h1>
 
-<div>
-<h1 className="text-2xl sm:text-3xl font-bold">
-Add New Bank
-</h1>
+                    <p className="text-muted-foreground">
+                        Create a new bank record
+                    </p>
+                </div>
 
-<p className="text-muted-foreground">
-Create a new bank record
-</p>
+                <Badge
+                    variant="secondary"
+                    className="text-xs sm:text-sm px-3 py-1"
+                >
+                    Bank Code: {formData.bank_code}
+                </Badge>
+            </div>
 
-</div>
+            <form onSubmit={handleSubmit}>
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Bank Information</CardTitle>
+                        <CardDescription>
+                            Enter bank and account details
+                        </CardDescription>
+                    </CardHeader>
 
-<Badge
-variant="secondary"
-className="text-xs sm:text-sm px-3 py-1"
->
-Bank Code: {formData.bank_code}
-</Badge>
+                    <CardContent className="space-y-4">
 
-</div>
+                        {/* Bank Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="bank_name">
+                                Bank Name
+                            </Label>
 
+                            <div className="relative">
+                                <Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
 
-<form onSubmit={handleSubmit}>
+                                <Input
+                                    id="bank_name"
+                                    value={formData.bank_name}
+                                    onChange={(e) =>
+                                        handleInputChange(
+                                            'bank_name',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="Commercial Bank"
+                                    className="pl-10"
+                                    required
+                                />
+                            </div>
+                        </div>
 
-<Card>
+                        {/* Branch + Account Number */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="branch_name">
+                                    Branch Name
+                                </Label>
 
-<CardHeader>
-<CardTitle>Bank Information</CardTitle>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
 
-<CardDescription>
-Enter bank and account details
-</CardDescription>
+                                    <Input
+                                        id="branch_name"
+                                        value={formData.branch_name}
+                                        onChange={(e) =>
+                                            handleInputChange(
+                                                'branch_name',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="Negombo Branch"
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
 
-</CardHeader>
+                            <div className="space-y-2">
+                                <Label htmlFor="account_number">
+                                    Account Number
+                                </Label>
 
+                                <div className="relative">
+                                    <CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
 
-<CardContent className="space-y-4">
+                                    <Input
+                                        id="account_number"
+                                        value={formData.account_number}
+                                        onChange={(e) =>
+                                            handleInputChange(
+                                                'account_number',
+                                                e.target.value
+                                            )
+                                        }
+                                        placeholder="1234567890"
+                                        className="pl-10"
+                                    />
+                                </div>
+                            </div>
+                        </div>
 
-{/* Bank Name */}
-<div className="space-y-2">
+                        {/* Account Holder */}
+                        <div className="space-y-2">
+                            <Label htmlFor="account_holder_name">
+                                Account Holder Name
+                            </Label>
 
-<Label htmlFor="bank_name">
-Bank Name
-</Label>
+                            <div className="relative">
+                                <User className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
 
-<div className="relative">
-<Building2 className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
+                                <Input
+                                    id="account_holder_name"
+                                    value={formData.account_holder_name}
+                                    onChange={(e) =>
+                                        handleInputChange(
+                                            'account_holder_name',
+                                            e.target.value
+                                        )
+                                    }
+                                    placeholder="John Silva"
+                                    className="pl-10"
+                                />
+                            </div>
+                        </div>
 
-<Input
-id="bank_name"
-value={formData.bank_name}
-onChange={(e)=>
-handleInputChange(
-'bank_name',
-e.target.value
-)
-}
-placeholder="Commercial Bank"
-className="pl-10"
-required
-/>
+                    </CardContent>
+                </Card>
 
-</div>
-</div>
+                {/* Buttons */}
+                <div className="flex flex-col sm:flex-row sm:justify-end gap-3 mt-8 pt-6 border-t">
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleClear}
+                        className="w-full sm:w-auto"
+                    >
+                        <X className="h-4 w-4 mr-2"/>
+                        Clear Form
+                    </Button>
 
-
-{/* Branch + Account Number */}
-<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-<div className="space-y-2">
-
-<Label htmlFor="branch_name">
-Branch Name
-</Label>
-
-<div className="relative">
-<MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
-
-<Input
-id="branch_name"
-value={formData.branch_name}
-onChange={(e)=>
-handleInputChange(
-'branch_name',
-e.target.value
-)
-}
-placeholder="Negombo Branch"
-className="pl-10"
-/>
-
-</div>
-</div>
-
-
-<div className="space-y-2">
-
-<Label htmlFor="account_number">
-Account Number
-</Label>
-
-<div className="relative">
-<CreditCard className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
-
-<Input
-id="account_number"
-value={formData.account_number}
-onChange={(e)=>
-handleInputChange(
-'account_number',
-e.target.value
-)
-}
-placeholder="1234567890"
-className="pl-10"
-/>
-
-</div>
-</div>
-
-</div>
-
-
-{/* Account Holder */}
-<div className="space-y-2">
-
-<Label htmlFor="account_holder_name">
-Account Holder Name
-</Label>
-
-<div className="relative">
-<User className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
-
-<Input
-id="account_holder_name"
-value={formData.account_holder_name}
-onChange={(e)=>
-handleInputChange(
-'account_holder_name',
-e.target.value
-)
-}
-placeholder="John Silva"
-className="pl-10"
-/>
-
-</div>
-
-</div>
-
-</CardContent>
-
-</Card>
-
-
-{/* Buttons */}
-<div className="flex flex-col sm:flex-row sm:justify-end gap-3 mt-8 pt-6 border-t">
-
-<Button
-type="button"
-variant="outline"
-onClick={handleClear}
-className="w-full sm:w-auto"
->
-<X className="h-4 w-4 mr-2"/>
-Clear Form
-</Button>
-
-<Button
-type="submit"
-className="w-full sm:w-auto gap-2"
->
-<Save className="h-4 w-4"/>
-Save Bank
-</Button>
-
-</div>
-
-</form>
-
-</div>
-)
+                    <Button
+                        type="submit"
+                        className="w-full sm:w-auto gap-2"
+                    >
+                        <Save className="h-4 w-4"/>
+                        Save Bank
+                    </Button>
+                </div>
+            </form>
+        </div>
+    )
 }

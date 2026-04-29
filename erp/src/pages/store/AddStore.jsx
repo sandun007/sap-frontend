@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -11,25 +11,50 @@ import axios from 'axios'
 export default function AddStore() {
 
     function generateStoreCode(stores) {
-    if (!stores || stores.length === 0) {
-        return "STR-0001";
+        if (!stores || stores.length === 0) {
+            return "STORE-0001";
+        }
+
+        const numbers = stores.map(s => {
+            const match = s.store_code?.match(/STORE-(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        });
+
+        const max = Math.max(...numbers);
+        const next = max + 1;
+
+        return `STORE-${String(next).padStart(4, "0")}`;
     }
 
-    const lastCode = stores[stores.length - 1]?.store_code;
-
-    const lastNumber = parseInt(lastCode?.split("-")[1] || "0");
-
-    const nextNumber = lastNumber + 1;
-
-    return `STR-${String(nextNumber).padStart(4, "0")}`;
-}
-
+    const [stores, setStores] = useState([])
     const [formData, setFormData] = useState({
-        store_code: generateStoreCode(),
+        store_code: "STORE-0001",
         store_name: ''
     })
 
-    const handleInputChange = (field,value) => {
+    // Fetch existing stores when component mounts
+    useEffect(() => {
+        fetchStores()
+    }, [])
+
+    const fetchStores = async () => {
+        try {
+            const response = await axios.get('/stores') // Adjust endpoint as needed
+            const storesList = response.data?.data || response.data || []
+            setStores(storesList)
+            
+            // Generate next code based on existing stores
+            setFormData(prev => ({
+                ...prev,
+                store_code: generateStoreCode(storesList)
+            }))
+        } catch (error) {
+            console.error('Error fetching stores:', error)
+            toast.error('Failed to load existing stores')
+        }
+    }
+
+    const handleInputChange = (field, value) => {
         setFormData(prev => ({
             ...prev,
             [field]: value
@@ -52,8 +77,13 @@ export default function AddStore() {
 
             toast.success(`Store created successfully! ID: ${realId}`)
 
+            // Update stores with new store
+            const updatedStores = [...stores, newStore]
+            setStores(updatedStores)
+
+            // Reset form with next code
             setFormData({
-                store_code: generateStoreCode(),
+                store_code: generateStoreCode(updatedStores),
                 store_name: ''
             })
 
@@ -65,7 +95,7 @@ export default function AddStore() {
 
     const handleClear = () => {
         setFormData({
-            store_code: generateStoreCode(),
+            store_code: generateStoreCode(stores),
             store_name: ''
         })
 
@@ -74,17 +104,10 @@ export default function AddStore() {
 
     return (
         <div className="container mx-auto px-4 py-6">
-
-            {/* Header */}
             <div className="flex justify-between items-center mb-6">
                 <div>
-                    <h1 className="text-3xl font-bold">
-                        Add New Store
-                    </h1>
-
-                    <p className="text-muted-foreground">
-                        Create a new store record
-                    </p>
+                    <h1 className="text-3xl font-bold">Add New Store</h1>
+                    <p className="text-muted-foreground">Create a new store record</p>
                 </div>
 
                 <Badge variant="secondary">
@@ -96,18 +119,12 @@ export default function AddStore() {
                 <Card>
                     <CardHeader>
                         <CardTitle>Store Information</CardTitle>
-                        <CardDescription>
-                            Enter store details
-                        </CardDescription>
+                        <CardDescription>Enter store details</CardDescription>
                     </CardHeader>
 
                     <CardContent className="space-y-4">
-
                         <div className="space-y-2">
-                            <Label htmlFor="store_code">
-                                Store Code
-                            </Label>
-
+                            <Label htmlFor="store_code">Store Code</Label>
                             <Input
                                 id="store_code"
                                 value={formData.store_code}
@@ -116,38 +133,24 @@ export default function AddStore() {
                         </div>
 
                         <div className="space-y-2">
-                            <Label htmlFor="store_name">
-                                Store Name
-                            </Label>
-
+                            <Label htmlFor="store_name">Store Name</Label>
                             <div className="relative">
                                 <Store className="absolute left-3 top-3 h-4 w-4 text-gray-400"/>
-
                                 <Input
                                     id="store_name"
                                     value={formData.store_name}
-                                    onChange={(e)=>
-                                        handleInputChange(
-                                            'store_name',
-                                            e.target.value
-                                        )
-                                    }
+                                    onChange={(e) => handleInputChange('store_name', e.target.value)}
                                     placeholder="Enter store name"
                                     className="pl-10"
                                     required
                                 />
                             </div>
                         </div>
-
                     </CardContent>
                 </Card>
 
                 <div className="flex justify-end gap-4 mt-8">
-                    <Button
-                        type="button"
-                        variant="outline"
-                        onClick={handleClear}
-                    >
+                    <Button type="button" variant="outline" onClick={handleClear}>
                         <X className="mr-2 h-4 w-4"/>
                         Clear
                     </Button>
@@ -157,9 +160,7 @@ export default function AddStore() {
                         Save Store
                     </Button>
                 </div>
-
             </form>
-
         </div>
     )
 }
