@@ -10,11 +10,19 @@ import axios from 'axios'
 
 export default function AddStore() {
 
-    function generateStoreCode() {
-        const timestamp = Date.now().toString().slice(-6)
-        const random = Math.random().toString(36).substr(2,4).toUpperCase()
-        return `STORE-${timestamp}-${random}`
+    function generateStoreCode(stores) {
+    if (!stores || stores.length === 0) {
+        return "STR-0001";
     }
+
+    const lastCode = stores[stores.length - 1]?.store_code;
+
+    const lastNumber = parseInt(lastCode?.split("-")[1] || "0");
+
+    const nextNumber = lastNumber + 1;
+
+    return `STR-${String(nextNumber).padStart(4, "0")}`;
+}
 
     const [formData, setFormData] = useState({
         store_code: generateStoreCode(),

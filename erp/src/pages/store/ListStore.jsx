@@ -169,11 +169,8 @@ XLSX.utils.book_append_sheet(wb,ws,'Template')
 XLSX.writeFile(wb,'store_template.xlsx')
 }
 
-const handleDelete = async (store) => {
-  const id = store.id;   // ✅ correct field
-
+const handleDelete = async (id) => {
   if (!id) {
-    console.log("STORE OBJECT:", store);
     toast.error("Invalid store ID");
     return;
   }
@@ -263,13 +260,7 @@ Excel
 PDF
 </Button>
 
-<Button
-variant="outline"
-onClick={()=>setImportDialog(true)}
->
-<Upload className="mr-2 h-4 w-4"/>
-Import
-</Button>
+
 
 </div>
 </CardContent>
@@ -391,11 +382,7 @@ Cancel
 
 <Button
 variant="destructive"
-onClick={()=>
-handleDelete(
-deleteDialog.store?.store_id
-)
-}
+onClick={() => handleDelete(deleteDialog.store?.id)}
 >
 Delete
 </Button>

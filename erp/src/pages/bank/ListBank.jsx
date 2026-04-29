@@ -392,15 +392,7 @@ PDF
 </Button>
 
 
-<Button
-variant="outline"
-onClick={()=>
-setImportDialog(true)
-}
->
-<Upload className="mr-2 h-4 w-4"/>
-Import
-</Button>
+
 
 
 </div>

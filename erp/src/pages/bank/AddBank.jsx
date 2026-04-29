@@ -26,15 +26,19 @@ export default function AddBank() {
         return `${year}-${month}-${day}`
     }
 
-    function generateBankCode(){
-        const timestamp = Date.now().toString().slice(-6)
-        const random = Math.random()
-            .toString(36)
-            .substr(2,4)
-            .toUpperCase()
-
-        return `BANK-${timestamp}-${random}`
+    function generateBankCode(banks) {
+    if (!banks || banks.length === 0) {
+        return "BANK-0001";
     }
+
+    const lastCode = banks[banks.length - 1]?.bank_code;
+
+    const lastNumber = parseInt(lastCode?.split("-")[1] || "0");
+
+    const nextNumber = lastNumber + 1;
+
+    return `BANK-${String(nextNumber).padStart(4, "0")}`;
+}
 
     const initialState = {
         bank_code: generateBankCode(),
