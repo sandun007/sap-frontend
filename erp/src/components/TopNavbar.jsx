@@ -87,6 +87,13 @@ const navGroups = [
                     { title: "Employee List", url: "/employee/list" },
                 ],
             },
+            {
+                title: "Store",
+                subItems: [
+                    { title: "Add Store", url: "/store/add" },
+                    { title: "Store List", url: "/store/list" },
+                ],
+            },
         ],
     },
     {
