@@ -87,6 +87,20 @@ const navGroups = [
                     { title: "Employee List", url: "/employee/list" },
                 ],
             },
+            {
+                title: "Store",
+                subItems: [
+                    { title: "Add Store", url: "/store/add" },
+                    { title: "Store List", url: "/store/list" },
+                ],
+            },
+            {
+                title: "Bank",
+                subItems: [
+                    { title: "Add Bank", url: "/bank/add" },
+                    { title: "Bank List", url: "/bank/list" },
+                ],
+            },
         ],
     },
     {
@@ -161,7 +175,7 @@ function DesktopNav() {
                             {group.title}
                         </NavigationMenuTrigger>
                         <NavigationMenuContent className="bg-slate-800 border border-l-slate-50000 text-gray-100 ">
-                            <ul className="grid w-[400px] gap-3 p-4 lg:w-[500px] lg:grid-cols-2">
+                            <ul className="grid w-[600px] gap-3 p-4 lg:grid-cols-3">
                                 {group.items.map((item) => (
                                     <li key={item.title}>
                                         {item.subItems ? (
@@ -270,7 +284,7 @@ function MobileNav() {
                             </h4>
 
                             {group.title === "Master File" ? (
-                                <div className="space-y-1">
+                                <div className="space-y-1 max-h-72 overflow-y-auto">
                                     {group.items.map((item) => {
                                         const isExpanded = expandedItems[item.title] || false;
                                         return (

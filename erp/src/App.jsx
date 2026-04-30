@@ -28,6 +28,10 @@ import AddSubCategory from "@/pages/subcategory/AddSubCategory.jsx";
 import ListSubCategories from "@/pages/subcategory/ListSubCategory.jsx";
 import AddPurchase from "./pages/purchase/AddPurchase";
 import ListPurchase from "./pages/purchase/ListPurchase";
+import AddStore from "@/pages/store/AddStore";
+import ListStore from "@/pages/store/ListStore";
+import AddBank from "@/pages/bank/AddBank";
+import ListBank from "@/pages/bank/ListBank";
 
 
 
@@ -87,6 +91,13 @@ function App() {
                     <Route path="/purchases/add/*" element={<AddPurchase/>} />
                     <Route path="/purchases/list/*" element={<ListPurchase/>} />
 
+                    {/*store*/}
+                    <Route path="/store/add/*" element={<AddStore/>} />
+                    <Route path="/store/list/*" element={<ListStore/>} />
+
+                    {/*bank*/}
+                    <Route path="/bank/add/*" element={<AddBank/>} />
+                    <Route path="/bank/list/*" element={<ListBank/>} />
 
                 </Route>
                 <Route path="/login" element={<Login/>}/>
