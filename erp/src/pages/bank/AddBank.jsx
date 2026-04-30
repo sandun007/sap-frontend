@@ -48,6 +48,7 @@ export default function AddBank() {
         branch_name:'',
         account_number:'',
         account_holder_name:'',
+        amount: 0,
         created_date: formatDate(new Date())
     }
 
@@ -100,6 +101,10 @@ export default function AddBank() {
             toast.error('Account number is required')
             return
         }
+        if (formData.amount === '' || formData.amount < 0) {
+    toast.error('Amount is required')
+    return
+}
 
         try {
             const response = await axios.post('/banks', formData)
@@ -120,6 +125,7 @@ export default function AddBank() {
                 branch_name: '',
                 account_number: '',
                 account_holder_name: '',
+                amount: 0,
                 created_date: formatDate(new Date())
             })
 
@@ -136,6 +142,7 @@ export default function AddBank() {
             branch_name: '',
             account_number: '',
             account_holder_name: '',
+            amount: 0,
             created_date: formatDate(new Date())
         })
 
@@ -273,6 +280,20 @@ export default function AddBank() {
                                 />
                             </div>
                         </div>
+                        {/* Amount */}
+<div className="space-y-2">
+    <Label htmlFor="amount">Amount</Label>
+
+    <Input
+        id="amount"
+        type="number"
+        value={formData.amount}
+        onChange={(e) =>
+            handleInputChange('amount', e.target.value)
+        }
+        placeholder="Enter amount"
+    />
+</div>
 
                     </CardContent>
                 </Card>

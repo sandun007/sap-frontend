@@ -112,7 +112,8 @@ filteredBanks.map(b=>({
 'Bank Name':b.bank_name,
 'Branch':b.branch_name,
 'Account Number':b.account_number,
-'Account Holder':b.account_holder_name
+'Account Holder':b.account_holder_name,
+'Amount': b.amount 
 }))
 )
 
@@ -150,7 +151,8 @@ head:[[
 'Bank',
 'Branch',
 'Account No',
-'Holder'
+'Holder',
+'Amount'
 ]],
 
 body:filteredBanks.map(b=>[
@@ -158,7 +160,8 @@ b.bank_code,
 b.bank_name,
 b.branch_name,
 b.account_number,
-b.account_holder_name
+b.account_holder_name,
+`Rs. ${Number(b.amount || 0).toLocaleString()}`
 ]),
 
 startY:30
@@ -427,6 +430,7 @@ Banks
 <TableHead>Branch</TableHead>
 <TableHead>Account Number</TableHead>
 <TableHead>Holder</TableHead>
+<TableHead>Amount</TableHead>
 <TableHead className="text-right">
 Actions
 </TableHead>
@@ -461,6 +465,10 @@ Actions
 
 <TableCell>
 {bank.account_holder_name}
+</TableCell>
+
+<TableCell>
+    Rs. {Number(bank.amount || 0).toLocaleString()}
 </TableCell>
 
 
@@ -661,6 +669,22 @@ account_holder_name:e.target.value
 }
 />
 
+</div>
+
+
+<div>
+    <Label>Amount</Label>
+
+    <Input
+        type="number"
+        value={editForm.amount || ''}
+        onChange={(e) =>
+            setEditForm({
+                ...editForm,
+                amount: e.target.value
+            })
+        }
+    />
 </div>
 
 </div>
