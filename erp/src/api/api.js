@@ -122,7 +122,8 @@ export const purchaseAPI = {
     create: (data) => api.post('/purchases', data),
     update: (id, data) => api.put(`/purchases/${id}`, data),
     delete: (id) => api.delete(`/purchases/${id}`),
-    search: (params) => api.get('/purchases/search', { params })
+    search: (params) => api.get('/purchases/search', { params }),
+    getProductHistory: (productId) => api.get(`/purchases/product/${productId}`)
 };
 
 // Dashboard
@@ -131,6 +132,15 @@ export const dashboardAPI = {
     getSalesData: (params) => api.get('/dashboard/sales', { params }),
     getTopProducts: () => api.get('/dashboard/top-products'),
     getRecentOrders: () => api.get('/dashboard/recent-orders')
+};
+
+// Bank API
+export const bankAPI = {
+    getAll: () => api.get('/banks'),
+    getById: (id) => api.get(`/banks/${id}`),
+    create: (data) => api.post('/banks', data),
+    update: (id, data) => api.put(`/banks/${id}`, data),
+    delete: (id) => api.delete(`/banks/${id}`)
 };
 
 export default api;

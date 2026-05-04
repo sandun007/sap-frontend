@@ -101,15 +101,33 @@ const menuItems = [
           { title: "Supplier List", url: "/supplier/list", icon: List },
         ]
       },
-        {
-            title: "Employee",
-            url: "/supplier",
-            icon: Users,
-            subItems: [
-                { title: "Add Employee", url: "/employee/add", icon: Plus },
-                { title: "Employee List", url: "/employee/list", icon: List },
-            ]
-        },
+      {
+        title: "Employee",
+        url: "/employee",
+        icon: Users,
+        subItems: [
+          { title: "Add Employee", url: "/employee/add", icon: Plus },
+          { title: "Employee List", url: "/employee/list", icon: List },
+        ]
+      },
+      { 
+        title: "Bank", 
+        url: "/bank", 
+        icon: CreditCard,
+        subItems: [
+          { title: "Add Bank", url: "/bank/add", icon: Plus },
+          { title: "Bank List", url: "/bank/list", icon: List },
+        ]
+      },
+      { 
+        title: "Store", 
+        url: "/store", 
+        icon: Package,
+        subItems: [
+          { title: "Add Store", url: "/store/add", icon: Plus },
+          { title: "Store List", url: "/store/list", icon: List },
+        ]
+      },
     ]
   },
   {
