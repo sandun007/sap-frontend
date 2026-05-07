@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { Plus, Trash2, Save, X, ShoppingCart, FileText, Calendar, User, History, 
-    ChevronDown, Building2, Package, Calculator, Wallet, Landmark, CreditCard, Banknote, Search, Check, ReceiptText, RotateCcw
+    ChevronDown, Building2, Package, Calculator, Wallet, Landmark, CreditCard, Banknote, Search, Check, ReceiptText, RotateCcw, Download
 } from 'lucide-react';
 import api, { purchaseAPI, bankAPI } from '@/api/api';
 import { useNavigate } from 'react-router-dom';
@@ -17,6 +17,15 @@ import {
     DropdownMenuContent,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { generatePurchasePDF } from '@/utils/purchasePDF';
 
 export default function AddPurchase() {
     const navigate = useNavigate();
@@ -88,17 +97,23 @@ export default function AddPurchase() {
         balance_due: 0
     });
 
+    // Post-completion states
+    const [showPrintDialog, setShowPrintDialog] = useState(false);
+    const [completedPurchase, setCompletedPurchase] = useState(null);
+    const [settings, setSettings] = useState(null);
+
     useEffect(() => {
         fetchInitialData();
     }, []);
 
     const fetchInitialData = async () => {
         try {
-            const [supRes, branchRes, prodRes, bankRes] = await Promise.all([
+            const [supRes, branchRes, prodRes, bankRes, settingsRes] = await Promise.all([
                 api.get('/suppliers'),
                 api.get('/branches'),
                 api.get('/products'),
-                bankAPI.getAll()
+                bankAPI.getAll(),
+                api.get('/settings')
             ]);
             
             const suppliersData = supRes.data.data || [];
@@ -110,6 +125,7 @@ export default function AddPurchase() {
             setBranches(branchesData);
             setProducts(productsData);
             setBanks(banksData);
+            setSettings(settingsRes.data.data || null);
 
             // Default to "Main Branch"
             if (branchesData.length > 0) {
@@ -155,6 +171,19 @@ export default function AddPurchase() {
             }
         } else {
             item[field] = value;
+            
+            // Real-time validation warning for price
+            if (field === 'selling_price' || field === 'stock_price') {
+                const stock = parseFloat(field === 'stock_price' ? value : item.stock_price) || 0;
+                const selling = parseFloat(field === 'selling_price' ? value : item.selling_price) || 0;
+                if (selling < stock && selling > 0) {
+                    // Just a subtle warning toast, doesn't block typing
+                    toast.warning("Warning: Selling price is lower than cost price", {
+                        id: 'price-warning-' + index, // prevents duplicate toasts
+                        duration: 2000
+                    });
+                }
+            }
         }
 
         const qty = parseFloat(item.quantity || 0);
@@ -248,6 +277,17 @@ export default function AddPurchase() {
             return;
         }
 
+        // Hard validation for Selling Price vs Stock Price
+        const invalidPriceItems = validItems.filter(item => 
+            parseFloat(item.selling_price || 0) < parseFloat(item.stock_price || 0)
+        );
+        
+        if (invalidPriceItems.length > 0) {
+            const firstItem = invalidPriceItems[0];
+            toast.error(`Invalid Price: Selling price for "${firstItem.product_name}" (Rs. ${firstItem.selling_price}) cannot be less than its cost price (Rs. ${firstItem.stock_price})`);
+            return;
+        }
+
         if (formData.payment_method === 'Bank') {
             if (!formData.bank_details.bank_name) {
                 toast.error("Please select a bank for bank transfer payment");
@@ -282,7 +322,20 @@ export default function AddPurchase() {
 
             await purchaseAPI.create(payload);
             toast.success("Purchase recorded successfully!");
-            navigate('/purchases/list');
+            
+            // Prepare data for PDF (include names)
+            const supplier = suppliers.find(s => s.supplier_id.toString() === formData.supplier_id);
+            const branch = branches.find(b => b.branch_id.toString() === formData.branch_id);
+            
+            const purchaseData = {
+                ...payload,
+                supplier_name: supplier?.supplier_name,
+                branch_name: branch?.branch_name
+            };
+
+            // Show confirmation dialog (Always)
+            setCompletedPurchase(purchaseData);
+            setShowPrintDialog(true);
         } catch (error) {
             console.error('Failed to save purchase:', error);
             toast.error(error.response?.data?.message || "Failed to record purchase");
@@ -428,7 +481,9 @@ export default function AddPurchase() {
                 </Card>
 
                 {/* 2. Basic Details & Payment Information Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {formData.items.some(item => item.product_id) && (
+                    <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Card>
                         <CardHeader className="border-b bg-gray-50/50">
                             <CardTitle className="text-lg flex items-center gap-2">
@@ -785,9 +840,8 @@ export default function AddPurchase() {
                     </Card>
                 </div>
 
-                {/* 3. Condition: if product selected, show History and Pricing */}
-                {formData.items.some(item => item.product_id) && (
-                    <div className="space-y-6">
+                        {/* 3. Item Details & Pricing */}
+                        <div className="space-y-6">
                         <Card className="animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <CardHeader className="border-b bg-gray-50/50">
                                 <CardTitle className="text-lg flex items-center gap-2">
@@ -810,7 +864,7 @@ export default function AddPurchase() {
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {formData.items.filter(item => item.product_id).map((item, index) => {
+                                            {formData.items.filter(item => item.product_id).map((item) => {
                                                 const realIndex = formData.items.findIndex(i => i === item);
                                                 const isActive = activeHistoryIndex === realIndex;
                                                 return (
@@ -842,7 +896,11 @@ export default function AddPurchase() {
                                                         <TableCell className="px-4">
                                                             <Input 
                                                                 type="number" 
-                                                                className="h-8 w-full text-right bg-white"
+                                                                className={`h-8 w-full text-right bg-white transition-colors ${
+                                                                    parseFloat(item.selling_price || 0) < parseFloat(item.stock_price || 0) 
+                                                                    ? "border-destructive text-destructive ring-destructive/20 focus-visible:ring-destructive" 
+                                                                    : ""
+                                                                }`}
                                                                 value={item.selling_price}
                                                                 onChange={(e) => handleItemChange(realIndex, 'selling_price', e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
@@ -967,6 +1025,7 @@ export default function AddPurchase() {
                             </Card>
                         )}
                     </div>
+                    </div>
                 )}
 
                 {/* Footer Actions */}
@@ -978,16 +1037,75 @@ export default function AddPurchase() {
                     >
                         Cancel
                     </Button>
-                    <Button 
-                        type="submit" 
-                        className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 min-w-[150px]" 
-                        disabled={loading}
-                    >
-                        <Save className="h-4 w-4" />
-                        {loading ? "Processing..." : "Complete GRN"}
-                    </Button>
+                    {formData.items.some(item => item.product_id) && (
+                        <Button 
+                            type="submit" 
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 min-w-[150px] animate-in fade-in zoom-in-95 duration-300" 
+                            disabled={loading}
+                        >
+                            <Save className="h-4 w-4" />
+                            {loading ? "Processing..." : "Complete GRN"}
+                        </Button>
+                    )}
                 </div>
             </form>
+
+            {/* Print Confirmation Dialog */}
+            <Dialog open={showPrintDialog} onOpenChange={(open) => {
+                if (!open) {
+                    setShowPrintDialog(false);
+                    navigate('/purchases/list');
+                }
+            }}>
+                <DialogContent className="sm:max-w-[425px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <FileText className="h-5 w-5 text-primary" />
+                            GRN Completed Successfully
+                        </DialogTitle>
+                        <DialogDescription>
+                            The Goods Received Note (<strong>{completedPurchase?.purchase_id}</strong>) has been recorded. Would you like to generate a print file as well?
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-4 py-4">
+                        <div className="bg-slate-50 p-4 rounded-lg border border-dashed space-y-2">
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Supplier:</span>
+                                <span className="font-semibold">{completedPurchase?.supplier_name}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">Total Amount:</span>
+                                <span className="font-bold text-primary">Rs. {Number(completedPurchase?.grand_total || 0).toLocaleString()}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <DialogFooter className="gap-2 sm:gap-0">
+                        <Button 
+                            variant="outline" 
+                            onClick={() => {
+                                setShowPrintDialog(false);
+                                navigate('/purchases/list');
+                            }}
+                        >
+                            No, Just Finish
+                        </Button>
+                        <Button 
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+                            onClick={async () => {
+                                await generatePurchasePDF(completedPurchase);
+                                // Give a small delay for the download to initiate before navigating
+                                setTimeout(() => {
+                                    setShowPrintDialog(false);
+                                    navigate('/purchases/list');
+                                }, 800);
+                            }}
+                        >
+                            <Download className="h-4 w-4" />
+                            Yes, Print GRN
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -20,8 +20,6 @@ export default function AddProduct() {
   const [formData, setFormData] = useState({
     product_name: '',
     description: '',
-    unit_price: '',
-    cost_price: '',
     barcode: '',
     weight: '',
     dimensions: '',
@@ -29,10 +27,7 @@ export default function AddProduct() {
     category_id: '',
     subcategory_id: '',
     brand_id: '',
-    supplier_id: '',
-    branch_id: '',
-    initial_stock: '0',
-    minimum_stock: '10'
+    supplier_id: ''
   })
 
   const [productId, setProductId] = useState(generateProductId())
@@ -44,7 +39,6 @@ export default function AddProduct() {
   const [brands, setBrands] = useState([])
   const [suppliers, setSuppliers] = useState([])
   const [loading, setLoading] = useState(false)
-  const [branches, setBranches] = useState([])
   const [showBarcodeScanner, setShowBarcodeScanner] = useState(false)
   const [showCamera, setShowCamera] = useState(false)
   const videoRef = useRef(null)
@@ -64,18 +58,16 @@ export default function AddProduct() {
 
   const fetchInitialData = async () => {
     try {
-      const [catRes, subRes, brandRes, supRes, branchRes] = await Promise.all([
+      const [catRes, subRes, brandRes, supRes] = await Promise.all([
         api.get('/categories'),
         api.get('/subcategories'),
         api.get('/brands'),
-        api.get('/suppliers'),
-        api.get('/branches')
+        api.get('/suppliers')
       ])
       setCategories(catRes.data.data || [])
       setSubcategories(subRes.data.data || [])
       setBrands(brandRes.data.data || [])
       setSuppliers(supRes.data.data || [])
-      setBranches(branchRes.data.data || [])
     } catch (error) {
       console.error('Failed to fetch initial data:', error)
       toast.error("Failed to load initial data")
@@ -169,7 +161,7 @@ export default function AddProduct() {
   }
 
   const generateQRCode = () => {
-    const qrData = `PRODUCT_ID:${productId}|NAME:${formData.product_name}|PRICE:${formData.unit_price}`
+    const qrData = `PRODUCT_ID:${productId}|NAME:${formData.product_name}`
     setQrCode(qrData)
     toast.success("QR Code generated successfully")
   }
@@ -178,7 +170,7 @@ export default function AddProduct() {
     e.preventDefault()
     
     // Basic validation
-    if (!formData.product_name || !formData.unit_price ) {
+    if (!formData.product_name) {
       toast.error("Please fill in all required fields")
       return
     }
@@ -189,13 +181,13 @@ export default function AddProduct() {
         product_name: formData.product_name,
         product_code: productId,
         description: formData.description,
-        price: parseFloat(formData.unit_price),
+        price: 0,
         unit: 'pcs', 
         status: formData.is_active ? 'active' : 'inactive',
         brand_id: formData.brand_id,
         subcategory_id: formData.subcategory_id,
         barcode: formData.barcode,
-        cost_price: parseFloat(formData.cost_price),
+        cost_price: 0,
         weight: formData.weight,
         dimensions: formData.dimensions,
         supplier_id: formData.supplier_id
@@ -204,27 +196,6 @@ export default function AddProduct() {
       const response = await api.post('/products', payload)
       
       if (response.data.success) {
-        const newProduct = response.data.data
-        
-        // If initial stock is specified and branch is selected, create stock entry
-        if (formData.branch_id && formData.initial_stock) {
-          try {
-            await api.post('/stocks', {
-              product_id: newProduct.product_id,
-              branch_id: parseInt(formData.branch_id),
-              brand_id: parseInt(formData.brand_id),
-              category_id: parseInt(formData.category_id),
-              subcategory_id: parseInt(formData.subcategory_id),
-              product_name: formData.product_name,
-              quantity: parseInt(formData.initial_stock),
-              minimum_stock_level: parseInt(formData.minimum_stock) || 10
-            })
-          } catch (stockError) {
-            console.error('Failed to create initial stock:', stockError)
-            toast.warning("Product created, but failed to set initial stock")
-          }
-        }
-
         toast.success("Product added successfully!")
         navigate('/products/list')
       }
@@ -329,33 +300,6 @@ export default function AddProduct() {
                   />
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="unit_price">Unit Price (Rs.) *</Label>
-                    <Input
-                      id="unit_price"
-                      type="number"
-                      value={formData.unit_price}
-                      onChange={(e) => handleInputChange('unit_price', e.target.value)}
-                      placeholder="0.00"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="cost_price">Cost Price (Rs.) *</Label>
-                    <Input
-                      id="cost_price"
-                      type="number"
-                      value={formData.cost_price}
-                      onChange={(e) => handleInputChange('cost_price', e.target.value)}
-                      placeholder="0.00"
-                      step="0.01"
-                      required
-                    />
-                  </div>
-                </div>
               </CardContent>
             </Card>
 
@@ -499,34 +443,6 @@ export default function AddProduct() {
                   </Select>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="branch_id">Initial Stock Branch *</Label>
-                    <Select value={formData.branch_id} onValueChange={(value) => handleInputChange('branch_id', value)}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select branch" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {branches.map((branch) => (
-                          <SelectItem key={branch.branch_id} value={branch.branch_id.toString()}>
-                            {branch.branch_name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="initial_stock">Initial Quantity *</Label>
-                    <Input
-                      id="initial_stock"
-                      type="number"
-                      value={formData.initial_stock}
-                      onChange={(e) => handleInputChange('initial_stock', e.target.value)}
-                      placeholder="0"
-                    />
-                  </div>
-                </div>
 
                 <div className="flex items-center justify-between">
                   <Label htmlFor="is_active" className="cursor-pointer">

@@ -5,6 +5,7 @@ import InboxPage from "./pages/InboxPage"
 import CalendarPage from "./pages/CalendarPage"
 import SearchPage from "./pages/SearchPage"
 import SettingsPage from "./pages/SettingsPage"
+import PrintingSettings from "./pages/PrintingSettings"
 import AddProduct from "./pages/product/AddProduct"
 import ListProduct from "./pages/product/ListProduct"
 import { Toaster } from "@/components/ui/sonner"
@@ -32,6 +33,7 @@ import AddStore from "@/pages/store/AddStore";
 import ListStore from "@/pages/store/ListStore";
 import AddBank from "@/pages/bank/AddBank";
 import ListBank from "@/pages/bank/ListBank";
+import StockAdjustment from "@/pages/stock/StockAdjustment";
 
 
 
@@ -48,7 +50,8 @@ function App() {
                     <Route path="inbox" element={<InboxPage />} />
                     <Route path="calendar" element={<CalendarPage />} />
                     <Route path="search" element={<SearchPage />} />
-                    <Route path="settings" element={<SettingsPage />} />
+                    <Route path="admin/settings/general" element={<SettingsPage />} />
+                    <Route path="admin/settings/printing" element={<PrintingSettings />} />
 
 
                     {/* product */}
@@ -63,7 +66,7 @@ function App() {
                     <Route path="/category/add/*" element={<AddCategory/>} />
                     <Route path="/category/list/*" element={<ListCategory/>} />
 
-                    //sub category
+                    {/* sub category */}
                     <Route path="/subcategory/add*" element={<AddSubCategory/>} />
                     <Route path="/subcategory/list*" element={<ListSubCategories/>} />
 
@@ -90,6 +93,9 @@ function App() {
                     {/* purchase */}
                     <Route path="/purchases/add/*" element={<AddPurchase/>} />
                     <Route path="/purchases/list/*" element={<ListPurchase/>} />
+
+                    {/* stock */}
+                    <Route path="/stock/adjustment" element={<StockAdjustment/>} />
 
                     {/*store*/}
                     <Route path="/store/add/*" element={<AddStore/>} />

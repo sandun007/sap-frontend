@@ -108,6 +108,8 @@ export default function ListBranch() {
         setEditForm(branch)
     }
 
+
+
     // Export to Excel
     const exportToExcel = () => {
         try {
@@ -502,42 +504,9 @@ export default function ListBranch() {
 
             {/* Import Dialog */}
             <Dialog open={importDialog} onOpenChange={setImportDialog}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>Import Branches</DialogTitle>
-                        <DialogDescription>
-                            Upload an Excel file to import branches. Download the template first to ensure proper formatting.
-                        </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                        <div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
-                            onClick={() => fileInputRef.current?.click()}
-                        >
-                            <Upload className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                            <p className="text-sm text-gray-600">Click to upload Excel file</p>
-                            <p className="text-xs text-gray-500 mt-1">.xlsx, .xls files supported</p>
-                            <input
-                                ref={fileInputRef}
-                                type="file"
-                                accept=".xlsx,.xls"
-                                onChange={handleFileUpload}
-                                className="hidden"
-                            />
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                            <Button variant="link" onClick={downloadTemplate} className="p-0 h-auto">
-                                Download template file
-                            </Button>
-                        </div>
-                    </div>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setImportDialog(false)}>
-                            Cancel
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
+                {/* ... existing import dialog content ... */}
             </Dialog>
+
         </div>
     )
 }

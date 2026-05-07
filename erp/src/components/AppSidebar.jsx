@@ -29,7 +29,8 @@ import {
   List,
   ChevronDown,
   ChevronRight,
-  LogOut
+  LogOut,
+  ArrowRightLeft
 } from "lucide-react"
 import { Link, useLocation } from "react-router-dom"
 import { useState } from "react"
@@ -144,6 +145,14 @@ const menuItems = [
         ]
       },
       { title: "Returns", url: "/returns", icon: RotateCcw },
+      { 
+        title: "Stock", 
+        url: "/stock", 
+        icon: ArrowRightLeft,
+        subItems: [
+          { title: "Stock Adjustment", url: "/stock/adjustment", icon: ArrowRightLeft },
+        ]
+      },
     ]
   },
   {

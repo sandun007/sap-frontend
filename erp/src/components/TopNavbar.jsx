@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, Link } from "react-router-dom";
 import {
     NavigationMenu,
@@ -19,6 +19,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Menu, ChevronDown, LogOut, Home, User, ChevronRight } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
+import { settingsAPI, BASE_URL } from "@/api/api";
 
 const navGroups = [
     {
@@ -120,6 +121,12 @@ const navGroups = [
                     { title: "Purchase List", url: "/purchases/list" },
                 ],
             },
+            {
+                title: "Stock",
+                subItems: [
+                    { title: "Stock Adjustment", url: "/stock/adjustment" },
+                ],
+            },
         ],
     },
     {
@@ -143,7 +150,13 @@ const navGroups = [
         items: [
             { title: "Users", url: "/admin/users" },
             { title: "Roles", url: "/admin/roles" },
-            { title: "Settings", url: "/admin/settings" },
+            {
+                title: "Settings",
+                subItems: [
+                    { title: "General Settings", url: "/admin/settings/general" },
+                    { title: "Printing Settings", url: "/admin/settings/printing" },
+                ],
+            },
         ],
     },
 ];
@@ -233,7 +246,13 @@ function DesktopNav() {
     );
 }
 
-function MobileNav() {
+function MobileNav({ companyName, logo }) {
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        return `${BASE_URL}/${cleanPath}`;
+    };
     const [open, setOpen] = useState(false);
     const location = useLocation();
     const [expandedItems, setExpandedItems] = useState({});
@@ -270,8 +289,7 @@ function MobileNav() {
                         className="flex items-center gap-2.5 font-bold text-lg text-gray-100"
                         onClick={() => setOpen(false)}
                     >
-                        <Home className="h-5 w-5 text-blue-300" />
-                        <span>ISURU SUPER</span>
+                        <span className="uppercase">{companyName || "SAP"}</span>
                     </Link>
                 </div>
 
@@ -387,13 +405,51 @@ function MobileNav() {
 }
 
 export function TopNavbar() {
+    const getImageUrl = (path) => {
+        if (!path) return null;
+        if (path.startsWith('http')) return path;
+        const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+        return `${BASE_URL}/${cleanPath}`;
+    };
+
+    const [settings, setSettings] = useState(() => {
+        const savedSettings = localStorage.getItem('appSettings');
+        return savedSettings ? JSON.parse(savedSettings) : {
+            company_name: "",
+            logo: ""
+        };
+    });
+
+    useEffect(() => {
+        const fetchSettings = async () => {
+            try {
+                const response = await settingsAPI.get();
+                if (response.data.success && response.data.data) {
+                    const newSettings = response.data.data;
+                    setSettings(newSettings);
+                    localStorage.setItem('appSettings', JSON.stringify(newSettings));
+                }
+            } catch (error) {
+                console.error("Failed to fetch settings for navbar:", error);
+            }
+        };
+        fetchSettings();
+
+        // Listen for custom event to update navbar immediately when settings are saved
+        const handleSettingsUpdate = () => fetchSettings();
+        window.addEventListener('settingsUpdated', handleSettingsUpdate);
+        return () => window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+    }, []);
+
     return (
         <header className="sticky top-0 z-50 w-full border-b bg-slate-900 backdrop-blur-md border-slate-700 text-gray-100">
             <div className="flex h-14 items-center justify-between px-4 md:px-6 max-w-screen-2xl mx-auto">
                 <div className="flex items-center gap-4">
-                    <MobileNav />
-                    <Link to="/" className="flex items-center gap-2 font-bold text-lg">
-                        <span className="text-gray-100">ISURU SUPER</span>
+                    <MobileNav companyName={settings.company_name} logo={settings.logo} />
+                    <Link to="/" className="flex items-center gap-2.5 font-bold text-lg group">
+                        <span className="text-gray-100 uppercase tracking-tight">
+                            {settings.company_name || "SAP"}
+                        </span>
                     </Link>
                 </div>
 
@@ -419,7 +475,7 @@ export function TopNavbar() {
                             </Link>
                         </DropdownMenuItem>
                         <DropdownMenuItem asChild>
-                            <Link to="/settings" className="hover:bg-slate-700 focus:bg-slate-100 ">
+                            <Link to="/admin/settings/general" className="hover:bg-slate-700 focus:bg-slate-100 ">
                                 Settings
                             </Link>
                         </DropdownMenuItem>
@@ -437,4 +493,4 @@ export function TopNavbar() {
             </div>
         </header>
     );
-}
+}

@@ -1,8 +1,8 @@
 import axios from 'axios';
+export const BASE_URL = 'http://localhost:8000';
 const api = axios.create({
-    baseURL: 'http://127.0.0.1:8000/api',
+    baseURL: `${BASE_URL}/api`,
     headers: {
-        'Content-Type': 'application/json',
         'Accept': 'application/json',
     },
     withCredentials: false
@@ -141,6 +141,12 @@ export const bankAPI = {
     create: (data) => api.post('/banks', data),
     update: (id, data) => api.put(`/banks/${id}`, data),
     delete: (id) => api.delete(`/banks/${id}`)
+};
+
+// Settings API
+export const settingsAPI = {
+    get: () => api.get('/settings'),
+    update: (data) => api.post('/settings', data)
 };
 
 export default api;

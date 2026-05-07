@@ -236,10 +236,7 @@ export default function ListProduct() {
   const exportToExcel = () => {
     try {
       const worksheet = XLSX.utils.json_to_sheet(filteredProducts.map(product => {
-        const stock = product.stocks?.[0]
-        const branchName = stock?.branch?.branch_name ||
-          branches.find(b => b.branch_id === stock?.branch_id)?.branch_name ||
-          'N/A'
+        const totalStock = (product.stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
         const supplierName = product.supplier?.supplier_name ||
           suppliers.find(s => s.supplier_id === product.supplier_id)?.supplier_name ||
           'N/A'
@@ -248,8 +245,6 @@ export default function ListProduct() {
           'Product Code': product.product_code,
           'Product Name': product.product_name,
           'Description': product.description || '',
-          'Unit Price': product.price,
-          'Cost Price': product.cost_price || 0,
           'Barcode': product.barcode || '',
           'Weight': product.weight || 0,
           'Dimensions': product.dimensions || '',
@@ -257,8 +252,7 @@ export default function ListProduct() {
           'Subcategory': product.subcategory?.subcategory_name || '',
           'Brand': product.brand?.brand_name || '',
           'Supplier': supplierName !== 'N/A' ? supplierName : '',
-          'Branch': branchName !== 'N/A' ? branchName : '',
-          'Initial Stock': stock?.quantity || 0,
+          'Total Stock': totalStock,
           'Status': product.status || (product.is_active ? 'active' : 'inactive'),
           'Created Date': product.created_at ? new Date(product.created_at).toLocaleDateString() : ''
         }
@@ -287,20 +281,16 @@ export default function ListProduct() {
       doc.text(`Total Products: ${filteredProducts.length}`, 14, 37)
 
       // Table data
-      const tableColumn = ['Product Code', 'Product Name', 'Brand', 'Category', 'Branch', 'Stock']
+      const tableColumn = ['Product Code', 'Product Name', 'Brand', 'Category', 'Total Stock']
       const tableRows = filteredProducts.map(product => {
-        const stock = product.stocks?.[0]
-        const branchName = stock?.branch?.branch_name ||
-          branches.find(b => b.branch_id === stock?.branch_id)?.branch_name ||
-          'N/A'
+        const totalStock = (product.stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
 
         return [
           product.product_code || 'N/A',
           product.product_name,
           product.brand?.brand_name || 'N/A',
           product.subcategory?.category?.category_name || 'N/A',
-          branchName,
-          (stock?.quantity || 0).toString()
+          totalStock.toString()
         ]
       })
 
@@ -391,16 +381,22 @@ export default function ListProduct() {
             product_name: productName,
             product_code: existing?.product_code || generateProductId(),
             description: item['Description'] || '',
-            price: Math.max(0.01, cleanNum(item['Unit Price'] || item['Price'])),
             unit: 'pcs',
             status: (item['Status'] || 'active').toLowerCase() === 'inactive' ? 'inactive' : 'active',
             brand_id: brandId || '',
             subcategory_id: subcategoryId || '',
             barcode: barcode || '',
-            cost_price: cleanNum(item['Cost Price'] || item['Cost']),
             weight: (item['Weight'] || '').toString(),
             dimensions: item['Dimensions'] || '',
             supplier_id: supplierId || '',
+          }
+
+          // Optional fields
+          if (item['Unit Price'] !== undefined || item['Price'] !== undefined) {
+            payload.price = Math.max(0.01, cleanNum(item['Unit Price'] || item['Price']))
+          }
+          if (item['Cost Price'] !== undefined || item['Cost'] !== undefined) {
+            payload.cost_price = cleanNum(item['Cost Price'] || item['Cost'])
           }
 
           const stockData = {
@@ -410,7 +406,6 @@ export default function ListProduct() {
 
           const columnErrors = []
           if (!productName) columnErrors.push({ column: 'Product Name', reason: 'Missing name' })
-          if (!payload.price) columnErrors.push({ column: 'Unit Price', reason: 'Missing or zero price' })
 
           // Only error on missing classification if the cell isn't empty (ignore "N/A" or empty)
           const brandVal = (item['Brand'] || '').trim()
@@ -437,8 +432,8 @@ export default function ListProduct() {
             }
 
             checkDiff('Product Name', 'product_name', payload.product_name, existing.product_name)
-            checkDiff('Unit Price', 'price', payload.price, existing.price)
-            checkDiff('Cost Price', 'cost_price', payload.cost_price, existing.cost_price)
+            if (payload.price !== undefined) checkDiff('Unit Price', 'price', payload.price, existing.price)
+            if (payload.cost_price !== undefined) checkDiff('Cost Price', 'cost_price', payload.cost_price, existing.cost_price)
             checkDiff('Status', 'status', payload.status, existing.status)
             checkDiff('Weight', 'weight', payload.weight, existing.weight)
             checkDiff('Dimensions', 'dimensions', payload.dimensions, existing.dimensions)
@@ -668,8 +663,6 @@ export default function ListProduct() {
       {
         'Product Name': 'Sample Product 1',
         'Description': 'Product description here',
-        'Unit Price': 100.00,
-        'Cost Price': 60.00,
         'Barcode': '123456789012',
         'Weight': 0.5,
         'Dimensions': '10x10x10cm',
@@ -791,7 +784,6 @@ export default function ListProduct() {
                 <TableHead>Product Name</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Brand</TableHead>
-                <TableHead>Price</TableHead>
                 <TableHead>Stock</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -825,21 +817,19 @@ export default function ListProduct() {
                   </TableCell>
                   <TableCell>{product.subcategory?.category?.category_name || 'N/A'}</TableCell>
                   <TableCell>{product.brand?.brand_name || 'N/A'}</TableCell>
+
                   <TableCell>
-                    <div className="font-medium">Rs.{product.price}</div>
-                    {product.cost_price && (
-                      <div className="text-sm text-muted-foreground">
-                        Cost: Rs.{product.cost_price}
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={(product.stocks?.[0]?.quantity || 0) > 10 ? "default" :
-                        (product.stocks?.[0]?.quantity || 0) > 0 ? "secondary" : "destructive"}
-                    >
-                      {product.stocks?.[0]?.quantity || 0} in stock
-                    </Badge>
+                    {(() => {
+                      const totalStock = (product.stocks || []).reduce((sum, s) => sum + parseFloat(s.quantity || 0), 0)
+                      return (
+                        <Badge
+                          variant={totalStock > 10 ? "default" :
+                            totalStock > 0 ? "secondary" : "destructive"}
+                        >
+                          {totalStock} in stock
+                        </Badge>
+                      )
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Badge variant={product.status === 'active' || product.is_active ? "default" : "secondary"}>
@@ -1186,10 +1176,10 @@ export default function ListProduct() {
             <div className="rounded-lg bg-muted/50 p-3 text-xs space-y-1">
               <p className="font-semibold text-foreground">Required columns in your Excel file:</p>
               <p className="text-muted-foreground">
-                <span className="font-medium text-foreground">Product Name</span>, <span className="font-medium text-foreground">Unit Price</span>
+                <span className="font-medium text-foreground">Product Name</span>
               </p>
               <p className="text-muted-foreground">
-                Optional: Description, Cost Price, Barcode, Weight, Dimensions, Brand, Subcategory, Supplier, Status (active/inactive)
+                Optional: Unit Price, Cost Price, Description, Barcode, Weight, Dimensions, Brand, Subcategory, Supplier, Status (active/inactive)
               </p>
             </div>
 
@@ -1393,14 +1383,18 @@ export default function ListProduct() {
               {/* Data Preview */}
               {!importReview.rows[importReview.currentIndex].existing && (
                 <div className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm border rounded-xl p-4">
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tighter">Price</p>
-                    <p className="font-mono">Rs.{importReview.rows[importReview.currentIndex].payload.price}</p>
-                  </div>
-                  <div className="space-y-0.5">
-                    <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tighter">Cost</p>
-                    <p className="font-mono text-muted-foreground">Rs.{importReview.rows[importReview.currentIndex].payload.cost_price}</p>
-                  </div>
+                  {importReview.rows[importReview.currentIndex].payload.price !== undefined && (
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tighter">Price</p>
+                      <p className="font-mono">Rs.{importReview.rows[importReview.currentIndex].payload.price}</p>
+                    </div>
+                  )}
+                  {importReview.rows[importReview.currentIndex].payload.cost_price !== undefined && (
+                    <div className="space-y-0.5">
+                      <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tighter">Cost</p>
+                      <p className="font-mono text-muted-foreground">Rs.{importReview.rows[importReview.currentIndex].payload.cost_price}</p>
+                    </div>
+                  )}
                   <div className="space-y-0.5">
                     <p className="text-[10px] uppercase text-muted-foreground font-bold tracking-tighter">Barcode</p>
                     <p className="font-mono truncate">{importReview.rows[importReview.currentIndex].payload.barcode || 'N/A'}</p>

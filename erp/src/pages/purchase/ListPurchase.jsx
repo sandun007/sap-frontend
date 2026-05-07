@@ -23,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { generatePurchasePDF } from '@/utils/purchasePDF';
 
 export default function ListPurchase() {
     const navigate = useNavigate();
@@ -137,6 +138,17 @@ export default function ListPurchase() {
             } catch (error) {
                 toast.error("Failed to delete record");
             }
+        }
+    };
+
+    const handlePrintIndividual = async (id) => {
+        try {
+            const response = await purchaseAPI.getById(id);
+            await generatePurchasePDF(response.data.data);
+            toast.success("GRN PDF generated");
+        } catch (error) {
+            console.error('Failed to print GRN:', error);
+            toast.error("Failed to generate GRN PDF");
         }
     };
 
@@ -284,6 +296,12 @@ export default function ListPurchase() {
                                                             <FileText className="h-4 w-4" /> View Details
                                                         </DropdownMenuItem>
                                                         <DropdownMenuItem 
+                                                            className="gap-2"
+                                                            onClick={() => handlePrintIndividual(p.purchase_id)}
+                                                        >
+                                                            <Download className="h-4 w-4" /> Print GRN
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem 
                                                             className="gap-2 text-destructive focus:text-destructive"
                                                             onClick={() => handleDelete(p.purchase_id)}
                                                         >
@@ -344,6 +362,16 @@ export default function ListPurchase() {
                                     ID: {viewDialog.purchase?.purchase_id}
                                 </DialogDescription>
                             </div>
+                            {viewDialog.purchase && (
+                                <Button 
+                                    onClick={async () => await generatePurchasePDF(viewDialog.purchase)}
+                                    variant="outline"
+                                    className="gap-2 border-primary text-primary hover:bg-primary/5"
+                                >
+                                    <Download className="h-4 w-4" />
+                                    Print PDF
+                                </Button>
+                            )}
                         </div>
                     </DialogHeader>
 

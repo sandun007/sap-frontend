@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import {
     Card,
     CardContent,
@@ -22,21 +23,63 @@ import {
     Settings,
     Plus,
     AlertTriangle,
-    Keyboard
+    Keyboard,
+    Home
 } from "lucide-react"
 import { toast } from "sonner"
-import logo from "../assets/logo.png"
+import { settingsAPI, BASE_URL } from "@/api/api";
+import defaultLogo from "../assets/logo.png"
 
 export default function HomePage() {
+  const [logo, setLogo] = useState(null);
+  const [logoSize, setLogoSize] = useState(80);
+
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith('http')) return path;
+    const cleanPath = path.startsWith('/') ? path.substring(1) : path;
+    return `${BASE_URL}/${cleanPath}`;
+  };
+
+  useEffect(() => {
+    const fetchLogo = async () => {
+      try {
+        const response = await settingsAPI.get();
+        if (response.data.success && response.data.data) {
+          if (response.data.data.logo) setLogo(getImageUrl(response.data.data.logo));
+          if (response.data.data.dashboard_logo_size) setLogoSize(response.data.data.dashboard_logo_size);
+        }
+      } catch (error) {
+        console.error("Failed to fetch logo for dashboard:", error);
+      }
+    };
+    fetchLogo();
+
+    // Listen for custom event to update dashboard immediately when settings are saved
+    const handleSettingsUpdate = () => fetchLogo();
+    window.addEventListener('settingsUpdated', handleSettingsUpdate);
+    return () => window.removeEventListener('settingsUpdated', handleSettingsUpdate);
+  }, []);
+
   return (
     <div className="space-y-6">
       {/* Header */}
         <div className="flex items-center gap-3">
-            <img
-                src={logo}
-                alt="Logo"
-                className="h-30 w-auto"
-            />
+            {logo ? (
+                <img
+                    src={logo}
+                    alt="Logo"
+                    style={{ height: `${logoSize}px` }}
+                    className="w-auto object-contain transition-all duration-300"
+                />
+            ) : (
+                <img
+                    src={defaultLogo}
+                    alt="Default Logo"
+                    style={{ height: `${logoSize}px` }}
+                    className="w-auto object-contain transition-all duration-300"
+                />
+            )}
         </div>
 
             {/* Key Metrics Grid */}
