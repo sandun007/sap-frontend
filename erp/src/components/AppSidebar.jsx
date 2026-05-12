@@ -150,7 +150,9 @@ const menuItems = [
         url: "/stock", 
         icon: ArrowRightLeft,
         subItems: [
+          { title: "Live Stock", url: "/stock/live-stock", icon: List },
           { title: "Stock Adjustment", url: "/stock/adjustment", icon: ArrowRightLeft },
+          { title: "Bin Card", url: "/stock/bin-card", icon: History },
         ]
       },
     ]

@@ -149,4 +149,11 @@ export const settingsAPI = {
     update: (data) => api.post('/settings', data)
 };
 
+// Stock API
+export const stockAPI = {
+    getByBranch: (branchId) => api.get(`/stocks/branch/${branchId}`),
+    transfer: (data) => api.post('/stocks/transfer', data),
+    getHistory: (params) => api.get('/stocks/history', { params })
+};
+
 export default api;

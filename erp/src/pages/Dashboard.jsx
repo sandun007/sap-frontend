@@ -152,15 +152,15 @@ export default function HomePage() {
                                 toast(
                                     <div style={{ whiteSpace: 'pre-line', fontFamily: 'monospace' }}>
                                         {`
-                                            Ctrl + H    →  Home Dashboard
-                                            Ctrl + P    →  Products
-                                            Ctrl + C    →  Categories
-                                            Ctrl + B    →  Brands
+                                            Alt + H    →  Home Dashboard
+                                            Alt + P    →  Products
+                                            Alt + C    →  Categories
+                                            Alt + B    →  Brands
                                             Shift + B   →  Branches
-                                            Ctrl + D    →  Departments
+                                            Alt + D    →  Departments
                                             Shift + C   →  Customers
-                                            Ctrl + S    →  Suppliers
-                                            Ctrl + E    →  Employees
+                                            Alt + S    →  Suppliers
+                                            Alt + E    →  Employees
                                             
                                             Press 1 anytime to show this list again
                                         `}

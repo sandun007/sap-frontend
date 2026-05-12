@@ -19,25 +19,25 @@ export default function HotKeys() {
         };
 
         //Home Dashboard
-        hotkeys('ctrl+h', ()=>{
+        hotkeys('alt+h', ()=>{
             navigate('/');
             return false;
         })
 
         //Product
-        hotkeys('ctrl+p', () => {
+        hotkeys('alt+p', () => {
             navigate('/products/list');
             return false;
         });
 
         //Category
-        hotkeys('ctrl+c', () => {
+        hotkeys('alt+c', () => {
             navigate('/category/list');
             return false;
         })
 
         //Brand
-        hotkeys('ctrl+b', () => {
+        hotkeys('alt+b', () => {
             navigate('/brand/list');
             return false;
         })
@@ -49,7 +49,7 @@ export default function HotKeys() {
         })
 
         //Department
-        hotkeys('ctrl+d', () => {
+        hotkeys('alt+d', () => {
             navigate('/department/list');
             return false;
         })
@@ -61,13 +61,13 @@ export default function HotKeys() {
         })
 
         //Supplier
-        hotkeys('ctrl+s', () => {
+        hotkeys('alt+s', () => {
             navigate('/supplier/list');
             return false;
         })
 
         //Employee
-        hotkeys('ctrl+e', () => {
+        hotkeys('alt+e', () => {
             navigate('/employee/list');
             return false;
         })

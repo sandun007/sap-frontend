@@ -124,7 +124,9 @@ const navGroups = [
             {
                 title: "Stock",
                 subItems: [
+                    { title: "Live Stock", url: "/stock/live-stock" },
                     { title: "Stock Adjustment", url: "/stock/adjustment" },
+                    { title: "Bin Card", url: "/stock/bin-card" },
                 ],
             },
         ],

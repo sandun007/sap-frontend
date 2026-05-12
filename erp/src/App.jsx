@@ -34,6 +34,9 @@ import ListStore from "@/pages/store/ListStore";
 import AddBank from "@/pages/bank/AddBank";
 import ListBank from "@/pages/bank/ListBank";
 import StockAdjustment from "@/pages/stock/StockAdjustment";
+import LiveStock from "@/pages/stock/LiveStock";
+import BinCard from "@/pages/stock/BinCard";
+
 
 
 
@@ -96,6 +99,9 @@ function App() {
 
                     {/* stock */}
                     <Route path="/stock/adjustment" element={<StockAdjustment/>} />
+                    <Route path="/stock/live-stock" element={<LiveStock/>} />
+                    <Route path="/stock/bin-card" element={<BinCard/>} />
+
 
                     {/*store*/}
                     <Route path="/store/add/*" element={<AddStore/>} />
