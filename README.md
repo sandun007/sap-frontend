@@ -134,18 +134,18 @@ sap-frontend/
 
 ---
 
-## 🔑 Admin Login & Testing Guide
+## 🔑 Admin Login & Testing Credentials
 
 ### Option 1: Standard Login (With Backend API)
-1. Ensure your backend server is running on `http://localhost:8000`.
-2. Start the frontend (`npm run dev`) and navigate to:
+Ensure your backend database is migrated and seeded (`php artisan migrate --seed`).
+1. Navigate to:
    ```text
    http://localhost:5173/login
    ```
-3. Enter your admin credentials:
-   - **Email:** `admin@example.com` *(or your backend seeded admin email)*
-   - **Password:** `password` *(or your configured admin password)*
-4. Click **Login** to enter the main dashboard.
+2. Sign in with the seeded Admin credentials:
+   - **Email:** `admin@example.com`
+   - **Password:** `password123`
+3. Click **Login** to enter the main dashboard.
 
 ### Option 2: Quick UI Demo / Testing Mode (Without Backend)
 If you want to immediately explore and test the dashboard, views, forms, and modules without running a local backend server:
