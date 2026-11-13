@@ -134,6 +134,37 @@ sap-frontend/
 
 ---
 
+## 🔑 Admin Login & Testing Guide
+
+### Option 1: Standard Login (With Backend API)
+1. Ensure your backend server is running on `http://localhost:8000`.
+2. Start the frontend (`npm run dev`) and navigate to:
+   ```text
+   http://localhost:5173/login
+   ```
+3. Enter your admin credentials:
+   - **Email:** `admin@example.com` *(or your backend seeded admin email)*
+   - **Password:** `password` *(or your configured admin password)*
+4. Click **Login** to enter the main dashboard.
+
+### Option 2: Quick UI Demo / Testing Mode (Without Backend)
+If you want to immediately explore and test the dashboard, views, forms, and modules without running a local backend server:
+
+1. Open `http://localhost:5173` in your browser.
+2. Open the Browser Developer Console (**F12** or right-click ➔ **Inspect** ➔ **Console**).
+3. Paste the following command and hit **Enter**:
+   ```javascript
+   localStorage.setItem('token', 'demo-test-token'); window.location.href = '/';
+   ```
+4. This simulates an authenticated session so you can explore:
+   - 📊 **Main Dashboard & Layout:** Navigation, statistics, search, and inbox.
+   - 📦 **Inventory & Stock:** Live stock tables, Bin Card views, and stock adjustments.
+   - 🏷️ **Master Data Interfaces:** Product lists, Add/Edit forms, Category & Brand views.
+   - 📷 **Barcode / QR Utilities:** Scanner popups and code generation.
+   - 📥 **Export Pipelines:** Excel (`.xlsx`) and PDF generation.
+
+---
+
 ## 📜 Available Scripts
 
 Inside the `erp` folder, you can run:
