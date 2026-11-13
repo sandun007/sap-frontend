@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { useNavigate } from "react-router-dom"
-import { useAuth } from "@/context/AuthContext"
+import { useAuth } from "@/Context/AuthContext"
 import { useState } from "react"
 import { toast } from "sonner"
 

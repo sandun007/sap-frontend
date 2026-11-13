@@ -1,10 +1,11 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import axios from 'axios';
+import { BASE_URL } from '@/api/api';
 
 const AuthContext = createContext({});
 export const useAuth = () => useContext(AuthContext);
 
-axios.defaults.baseURL = 'http://127.0.0.1:8000/api';
+axios.defaults.baseURL = `${BASE_URL}/api`;
 
 const initialToken = localStorage.getItem('token');
 if (initialToken) {
